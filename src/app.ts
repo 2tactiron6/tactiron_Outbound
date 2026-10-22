@@ -8,6 +8,9 @@ import { z } from 'zod';
 import { VerticalSliceOrchestrator } from './vertical-slice.js';
 import { RawLeadImport } from './modules/leads/ingestion.js';
 import { config } from './config/env.js';
+import { ApolloDiscoveryService } from './modules/leads/apollo-discovery.js';
+import { ApolloCsvImporter } from './modules/leads/apollo-csv.js';
+import { MockApolloAdapter, ApolloApiAdapter } from './integrations/apollo/adapter.js';
 
 export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalSliceOrchestrator()): FastifyInstance {
   const app = Fastify({
@@ -82,6 +85,81 @@ export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalS
         isNew: r.isNewContact,
         status: r.contact.status
       }))
+    });
+  });
+
+  // 2b. Apollo ICP Lead Discovery Endpoint
+  const ApolloDiscoverySchema = z.object({
+    countries: z.array(z.string()).min(1),
+    titles: z.array(z.string()).optional(),
+    minEmployees: z.number().int().positive().optional(),
+    page: z.number().int().positive().optional(),
+    perPage: z.number().int().positive().max(100).optional()
+  });
+
+  const apolloAdapter = config.APOLLO_API_KEY
+    ? new ApolloApiAdapter(config.APOLLO_API_KEY)
+    : new MockApolloAdapter();
+
+  const apolloDiscoveryService = new ApolloDiscoveryService(
+    apolloAdapter,
+    orchestrator.ingestionService,
+    orchestrator.complianceRouter,
+    orchestrator.qualificationEngine
+  );
+
+  app.post('/leads/discover/apollo', async (req, reply) => {
+    const parseResult = ApolloDiscoverySchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'BAD_REQUEST',
+        details: parseResult.error.format()
+      });
+    }
+
+    const report = await apolloDiscoveryService.discoverLeads(parseResult.data);
+    return reply.status(200).send({
+      success: true,
+      provider: config.APOLLO_API_KEY ? 'APOLLO_LIVE_API' : 'APOLLO_SANDBOX_MOCK',
+      report: {
+        totalDiscovered: report.totalDiscovered,
+        newCompaniesCount: report.newCompaniesCount,
+        newContactsCount: report.newContactsCount,
+        eligibleForOutreachCount: report.eligibleForOutreachCount,
+        blockedByComplianceCount: report.blockedByComplianceCount,
+        leads: report.leads.map(l => ({
+          contactEmail: l.ingestion.contact.email,
+          companyName: l.ingestion.company.name,
+          country: l.ingestion.contact.country,
+          teamSize: l.ingestion.company.teamSize,
+          complianceAllowed: l.compliance.allowed,
+          complianceReason: l.compliance.reasonCode,
+          qualificationOutcome: l.qualification.outcome
+        }))
+      }
+    });
+  });
+
+  // 2c. Apollo CSV Import Endpoint
+  const apolloCsvImporter = new ApolloCsvImporter(
+    orchestrator.ingestionService,
+    orchestrator.complianceRouter,
+    orchestrator.qualificationEngine
+  );
+
+  app.post('/leads/import/apollo-csv', async (req, reply) => {
+    const body = req.body as { csvContent?: string };
+    if (!body?.csvContent) {
+      return reply.status(400).send({
+        error: 'BAD_REQUEST',
+        message: 'Request body must contain "csvContent" string.'
+      });
+    }
+
+    const result = apolloCsvImporter.importCsvText(body.csvContent);
+    return reply.status(200).send({
+      success: true,
+      result
     });
   });
 
