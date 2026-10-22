@@ -1,0 +1,281 @@
+// Prisma Schema for Headless Outbound Sales Automation System
+// Authoritative Store: PostgreSQL
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AccountStatus {
+  PROSPECT
+  ACTIVE_OUTREACH
+  PAUSED_FOR_HANDOVER
+  QUALIFIED
+  NURTURE
+  DISQUALIFIED
+  SUPPRESSED
+}
+
+enum ContactStatus {
+  NEW
+  ENRICHED
+  ELIGIBLE
+  IN_CAMPAIGN
+  HANDED_OVER
+  SUPPRESSED
+}
+
+enum EmailVerificationStatus {
+  UNVERIFIED
+  VALID
+  RISKY
+  INVALID
+}
+
+enum Channel {
+  EMAIL
+  LINKEDIN
+  WHATSAPP
+}
+
+enum LawfulBasis {
+  LEGITIMATE_INTEREST
+  CONSENT
+  CONTRACT
+  LEGAL_OBLIGATION
+}
+
+enum SuppressionReason {
+  UNSUBSCRIBE
+  COMPLAINT
+  LEGAL_DEMAND
+  INVALID_EMAIL
+  DO_NOT_CONTACT_DOMAIN
+  MANUAL_SUPPRESSION
+}
+
+enum QualificationOutcome {
+  WARM_QUALIFIED_HAND_TO_HUMAN
+  NURTURE_FAILS_FIT_OR_ROLE
+  NO_ACTION
+  SUPPRESSED_OR_BLOCKED
+}
+
+enum HandoverPriority {
+  URGENT_1H
+  STANDARD_4H
+  COMPLIANCE_1D
+}
+
+enum HandoverStatus {
+  PENDING
+  SYNCHRONIZED_ODOO
+  FAILED_RETRYING
+  RESOLVED
+}
+
+model Company {
+  id            String         @id @default(uuid())
+  name          String
+  domain        String         @unique
+  website       String?
+  country       String
+  region        String?
+  industry      String?
+  segmentFit    Boolean        @default(false)
+  teamSize      Int?
+  accountStatus AccountStatus  @default(PROSPECT)
+  provenance    Json
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  contacts             Contact[]
+  qualificationResults QualificationResult[]
+  handoverEvents       HandoverEvent[]
+
+  @@index([domain])
+  @@index([country])
+  @@index([accountStatus])
+  @@map("companies")
+}
+
+model Contact {
+  id                   String                  @id @default(uuid())
+  companyId            String
+  company              Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  email                String                  @unique
+  firstName            String?
+  lastName             String?
+  jobTitle             String?
+  roleIsTarget         Boolean                 @default(false)
+  phone                String?
+  country              String
+  verificationStatus   EmailVerificationStatus @default(UNVERIFIED)
+  verificationMetadata Json?
+  status               ContactStatus           @default(NEW)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  consentRecords       ConsentRecord[]
+  suppressionRecords   SuppressionRecord[]
+  qualificationResults QualificationResult[]
+  handoverEvents       HandoverEvent[]
+  conversations        Conversation[]
+
+  @@index([email])
+  @@index([companyId])
+  @@index([status])
+  @@map("contacts")
+}
+
+model ConsentRecord {
+  id                 String      @id @default(uuid())
+  contactId          String
+  contact            Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  channel            Channel
+  lawfulBasis        LawfulBasis
+  evidenceReference  String
+  recordedAt         DateTime    @default(now())
+  notes              String?
+
+  @@index([contactId, channel])
+  @@map("consent_records")
+}
+
+model SuppressionRecord {
+  id           String            @id @default(uuid())
+  contactId    String?
+  contact      Contact?          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactEmail String?
+  domain       String?
+  channel      Channel?
+  reason       SuppressionReason
+  source       String
+  recordedAt   DateTime          @default(now())
+
+  @@index([contactEmail])
+  @@index([domain])
+  @@map("suppression_records")
+}
+
+model Conversation {
+  id                String    @id @default(uuid())
+  contactId         String
+  contact           Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  channel           Channel
+  externalThreadId  String?
+  status            String    @default("ACTIVE")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  messages          Message[]
+
+  @@index([contactId])
+  @@map("conversations")
+}
+
+model Message {
+  id                String       @id @default(uuid())
+  conversationId    String
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction         String       // "INBOUND" or "OUTBOUND"
+  channel           Channel
+  from              String
+  to                String
+  subject           String?
+  body              String
+  externalMessageId String?      @unique
+  receivedAt        DateTime     @default(now())
+
+  aiClassification  AiClassification?
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model AiClassification {
+  id                     String   @id @default(uuid())
+  messageId              String   @unique
+  message                Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  modelName              String
+  promptVersion          String
+  replyType              Int
+  intentName             String
+  confidence             Float
+  extractedFacts         Json
+  guardrailKeywordHit    Boolean
+  matchedKeywords        String[]
+  recommendedAction      String
+  draftHoldingReply      String?
+  isEscalation           Boolean
+  escalationTarget       String
+  responseTargetHours    Int
+  requiresHumanReview    Boolean
+  reviewStatus           String
+  createdAt              DateTime @default(now())
+
+  @@map("ai_classifications")
+}
+
+model QualificationResult {
+  id               String               @id @default(uuid())
+  contactId        String
+  contact          Contact              @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  companyId        String
+  company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ruleVersion      String
+  segmentFit       Boolean
+  countryPermitted Boolean
+  teamSizeFit      Boolean
+  teamSizeValue    Int?
+  roleTargetFit    Boolean
+  intentSignal     Boolean
+  outcome          QualificationOutcome
+  rationale        String
+  evaluatedAt      DateTime             @default(now())
+
+  @@index([contactId])
+  @@index([companyId])
+  @@map("qualification_results")
+}
+
+model HandoverEvent {
+  id                 String           @id @default(uuid())
+  contactId          String
+  contact            Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  companyId          String
+  company            Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  conversationId     String
+  priority           HandoverPriority
+  slaDeadline        DateTime
+  status             HandoverStatus   @default(PENDING)
+  handoverPack       Json
+  odooLeadId         Int?
+  assignedOwnerEmail String?
+  retryCount         Int              @default(0)
+  errorLog           String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([status])
+  @@index([slaDeadline])
+  @@map("handover_events")
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  eventType  String
+  actor      String
+  details    Json
+  timestamp  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@map("audit_events")
+}

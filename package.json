@@ -1,0 +1,39 @@
+{
+  "name": "tactiron-outbound-sales",
+  "version": "1.0.0",
+  "description": "Headless AI-Led Outbound Sales Automation Backend for Push-to-Talk Platform",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prisma:generate": "prisma generate"
+  },
+  "keywords": [
+    "sales-automation",
+    "outbound",
+    "ptt",
+    "fastify",
+    "typescript",
+    "odoo",
+    "smartlead"
+  ],
+  "author": "Tactiron Engineering",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "fastify": "^4.28.1",
+    "pino": "^9.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.6",
+    "pino-pretty": "^11.3.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}
