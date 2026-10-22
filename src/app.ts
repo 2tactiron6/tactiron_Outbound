@@ -11,6 +11,7 @@ import { config } from './config/env.js';
 import { ApolloDiscoveryService } from './modules/leads/apollo-discovery.js';
 import { ApolloCsvImporter } from './modules/leads/apollo-csv.js';
 import { MockApolloAdapter, ApolloApiAdapter } from './integrations/apollo/adapter.js';
+import { getConsoleHtml } from './ui/console.js';
 
 export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalSliceOrchestrator()): FastifyInstance {
   const app = Fastify({
@@ -276,6 +277,84 @@ export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalS
         complianceEscalations: 'Within 1 business day'
       }
     };
+  });
+
+  // 6. Odoo Handovers List for Ops UI
+  app.get('/internal/handovers', async () => {
+    const odooLeads = orchestrator.odooAdapter.getAllLeads();
+    return {
+      total: odooLeads.length,
+      leads: odooLeads.map(l => ({
+        id: l.id,
+        contact_name: l.payload.contact_name,
+        email_from: l.payload.email_from,
+        partner_name: l.payload.partner_name,
+        priority: l.payload.priority,
+        description: l.payload.description,
+        updatedAt: l.updatedAt
+      }))
+    };
+  });
+
+  // 7. Interactive Reply Simulator for Ops Testing
+  const SimulateReplySchema = z.object({
+    replyText: z.string().min(1),
+    companyName: z.string().default('Simulated Fleet LLC'),
+    country: z.string().default('AE'),
+    contactEmail: z.string().email().default('operations@fleet.ae'),
+    teamSize: z.number().default(40)
+  });
+
+  app.post('/internal/simulate-reply', async (req, reply) => {
+    const parseResult = SimulateReplySchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({ error: 'BAD_REQUEST', details: parseResult.error.format() });
+    }
+
+    const { replyText, companyName, country, contactEmail, teamSize } = parseResult.data;
+    const domain = contactEmail.split('@')[1];
+
+    const execution = await orchestrator.run({
+      lead: {
+        companyName,
+        domain,
+        country,
+        teamSize,
+        segmentFit: true,
+        contactEmail,
+        firstName: 'Simulated',
+        lastName: 'Contact',
+        jobTitle: 'Fleet Director',
+        roleIsTarget: true,
+        source: 'OPS_CONSOLE_SIMULATOR'
+      },
+      channel: 'EMAIL',
+      simulatedOutboundMessage: 'Previous PTT introduction message',
+      simulatedInboundReply: replyText
+    });
+
+    return reply.status(200).send({
+      replyClassification: execution.replyClassification,
+      qualificationOutcome: execution.qualification.outcome,
+      handoverStatus: execution.handoverEvent?.status || 'NO_HANDOVER',
+      handoverDescription: execution.handoverEvent
+        ? orchestrator.handoverService.formatOdooDescription(
+            execution.handoverEvent.handoverPack,
+            execution.handoverEvent.priority,
+            execution.handoverEvent.slaDeadline
+          )
+        : null
+    });
+  });
+
+  // 8. Serve Operations & Tech Web Console UI
+  app.get('/', async (_req, reply) => {
+    return reply.redirect('/console');
+  });
+
+  app.get('/console', async (_req, reply) => {
+    reply.type('text/html; charset=utf-8');
+    return reply.send(getConsoleHtml());
   });
 
   return app;

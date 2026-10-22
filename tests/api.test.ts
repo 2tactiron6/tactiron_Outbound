@@ -132,4 +132,47 @@ describe('Operational API & Webhook Endpoints', () => {
     expect(body.missedEscalationStatus).toBe('On target (0)');
     expect(body.targetSLA.demoMeetingRequests).toBe('Within 1 hour');
   });
+
+  it('GET /console renders the Operations & Tech Console UI HTML', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/console'
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.body).toContain('Tactiron Outbound Ops Console');
+    expect(res.body).toContain('Apollo ICP Lead Discovery');
+    expect(res.body).toContain('Inbound Reply & Guardrail Testing Lab');
+  });
+
+  it('GET / redirects to /console', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/'
+    });
+
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe('/console');
+  });
+
+  it('POST /internal/simulate-reply runs simulator and returns classification and handover pack', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/internal/simulate-reply',
+      payload: {
+        companyName: 'Sharjah Transport Co',
+        country: 'AE',
+        contactEmail: 'fleet@sharjahtransport.ae',
+        teamSize: 50,
+        replyText: 'Can you give us a quote and pricing for 50 handhelds?'
+      }
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.replyClassification.replyType).toBe(5); // Pricing
+    expect(body.replyClassification.guardrailKeywordHit).toBe(true);
+    expect(body.handoverDescription).toContain('AI OUTBOUND SALES HANDOVER PACK');
+  });
 });
