@@ -12,8 +12,16 @@ import { ApolloDiscoveryService } from './modules/leads/apollo-discovery.js';
 import { ApolloCsvImporter } from './modules/leads/apollo-csv.js';
 import { MockApolloAdapter, ApolloApiAdapter } from './integrations/apollo/adapter.js';
 import { getConsoleHtml } from './ui/console.js';
+import { DispatchQueue, DispatchWorker, AutomationSettings } from './modules/dispatch/index.js';
+import { WhatsAppHandler } from './modules/whatsapp/handler.js';
+import { MockOdooWhatsAppAdapter, OdooWhatsAppAdapter } from './integrations/odoo/whatsapp-adapter.js';
+import { MockLLMAdapter } from './integrations/llm/adapter.js';
 
-export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalSliceOrchestrator()): FastifyInstance {
+export function buildApp(
+  orchestrator: VerticalSliceOrchestrator = new VerticalSliceOrchestrator(),
+  dispatchWorker?: DispatchWorker,
+  whatsAppHandler?: WhatsAppHandler
+): FastifyInstance {
   const app = Fastify({
     logger: {
       level: config.NODE_ENV === 'test' ? 'silent' : 'info',
@@ -22,6 +30,32 @@ export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalS
   });
 
   let isKillSwitchActive = config.KILL_SWITCH_ACTIVE;
+
+  const queue = new DispatchQueue();
+  const worker = dispatchWorker || new DispatchWorker(
+    queue,
+    undefined,
+    () => isKillSwitchActive
+  );
+
+  const whatsAppAdapter = config.ODOO_URL && config.ODOO_DB && config.ODOO_USERNAME && config.ODOO_API_KEY
+    ? new OdooWhatsAppAdapter(config.ODOO_URL, config.ODOO_DB, config.ODOO_USERNAME, config.ODOO_API_KEY)
+    : new MockOdooWhatsAppAdapter();
+
+  const waHandler = whatsAppHandler || new WhatsAppHandler(
+    new MockLLMAdapter(),
+    whatsAppAdapter,
+    orchestrator.odooAdapter
+  );
+
+  // In non-test environments, start automated background worker runner
+  if (config.NODE_ENV !== 'test') {
+    worker.start();
+  }
+
+  app.addHook('onClose', async () => {
+    worker.stop();
+  });
 
   // 1. Health & Readiness Endpoints
   app.get('/health', async () => {
@@ -93,6 +127,7 @@ export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalS
   const ApolloDiscoverySchema = z.object({
     countries: z.array(z.string()).min(1),
     titles: z.array(z.string()).optional(),
+    industries: z.array(z.string()).optional(),
     minEmployees: z.number().int().positive().optional(),
     page: z.number().int().positive().optional(),
     perPage: z.number().int().positive().max(100).optional()
@@ -129,9 +164,14 @@ export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalS
         eligibleForOutreachCount: report.eligibleForOutreachCount,
         blockedByComplianceCount: report.blockedByComplianceCount,
         leads: report.leads.map(l => ({
-          contactEmail: l.ingestion.contact.email,
           companyName: l.ingestion.company.name,
+          jobTitle: l.ingestion.contact.jobTitle,
+          contactName: [l.ingestion.contact.firstName, l.ingestion.contact.lastName].filter(Boolean).join(' ') || l.ingestion.contact.email,
+          contactEmail: l.ingestion.contact.email,
+          contactPhone: l.ingestion.contact.phone,
+          companyPhone: l.ingestion.company.companyPhone,
           country: l.ingestion.contact.country,
+          industry: l.ingestion.company.industry,
           teamSize: l.ingestion.company.teamSize,
           complianceAllowed: l.compliance.allowed,
           complianceReason: l.compliance.reasonCode,
@@ -161,6 +201,98 @@ export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalS
     return reply.status(200).send({
       success: true,
       result
+    });
+  });
+
+  // 2d. Queue Discovered Leads into Outreach Campaign Endpoint
+  const QueueLeadsSchema = z.object({
+    campaignName: z.string().optional().default('PTT GCC & Regional Fleet Outbound'),
+    leads: z.array(z.object({
+      contactEmail: z.string().email(),
+      companyName: z.string().optional(),
+      contactName: z.string().optional(),
+      jobTitle: z.string().optional(),
+      contactPhone: z.string().optional(),
+      companyPhone: z.string().optional(),
+      country: z.string().optional(),
+      industry: z.string().optional(),
+      complianceAllowed: z.boolean().optional(),
+      complianceReason: z.string().optional(),
+      qualificationOutcome: z.string().optional()
+    })).min(1)
+  });
+
+  app.post('/campaigns/queue-leads', async (req, reply) => {
+    if (isKillSwitchActive) {
+      return reply.status(403).send({
+        error: 'KILL_SWITCH_ACTIVE',
+        message: 'Campaign queuing blocked: Emergency kill switch is currently active.'
+      });
+    }
+
+    const parseResult = QueueLeadsSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'BAD_REQUEST',
+        details: parseResult.error.format()
+      });
+    }
+
+    const { campaignName, leads } = parseResult.data;
+    const queued: Array<{ email: string; company?: string }> = [];
+    const blocked: Array<{ email: string; reason?: string }> = [];
+
+    for (const lead of leads) {
+      // If marked as not compliant, block from outreach campaign
+      if (lead.complianceAllowed === false) {
+        blocked.push({
+          email: lead.contactEmail,
+          reason: lead.complianceReason || 'BLOCKED_BY_COMPLIANCE'
+        });
+        continue;
+      }
+
+      // If contact is actively chatting on WhatsApp, block/suppress from email campaign
+      const contact = orchestrator.ingestionService.getContact(lead.contactEmail);
+      const contactPhone = lead.contactPhone || contact?.phone;
+      if (contactPhone && waHandler.isPhoneActiveOnWhatsApp(contactPhone)) {
+        blocked.push({
+          email: lead.contactEmail,
+          reason: 'BLOCKED_ACTIVE_WHATSAPP_CONVERSATION: Prospect is actively conversing via WhatsApp; email sequence suppressed.'
+        });
+        continue;
+      }
+
+      // Update contact status in ingestion store
+      if (contact) {
+        contact.status = 'IN_CAMPAIGN';
+      }
+
+      // Enqueue job into Dispatch Queue for automated worker
+      worker.getQueue().enqueue({
+        leadEmail: lead.contactEmail,
+        companyName: lead.companyName || 'Unknown Company',
+        campaignName,
+        step: 1,
+        status: 'PENDING',
+        scheduledAt: new Date()
+      });
+
+      queued.push({
+        email: lead.contactEmail,
+        company: lead.companyName
+      });
+    }
+
+    return reply.status(200).send({
+      success: true,
+      campaignName,
+      totalSubmitted: leads.length,
+      queuedCount: queued.length,
+      blockedCount: blocked.length,
+      queued,
+      blocked,
+      message: `Successfully queued ${queued.length} eligible lead(s) for outreach in campaign "${campaignName}".${blocked.length > 0 ? ` (${blocked.length} lead(s) blocked by compliance).` : ''}`
     });
   });
 
@@ -238,6 +370,115 @@ export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalS
     }
 
     return reply.status(200).send({ received: true, status: 'IGNORED_EVENT_TYPE' });
+  });
+
+  // 3b. Odoo Native WhatsApp Inbound Webhook
+  const OdooWhatsAppWebhookSchema = z.object({
+    channelId: z.number().int().positive(),
+    phone: z.string().min(1),
+    partnerName: z.string().min(1),
+    messageBody: z.string().min(1),
+    partnerEmail: z.string().email().optional(),
+    timestamp: z.string().optional()
+  });
+
+  app.post('/webhooks/odoo/whatsapp', async (req, reply) => {
+    const parseResult = OdooWhatsAppWebhookSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'INVALID_WEBHOOK_PAYLOAD',
+        details: parseResult.error.format()
+      });
+    }
+
+    const data = parseResult.data;
+    const result = await waHandler.handleIncoming(data);
+
+    // Suppress pending email dispatch jobs for this prospect to prevent double outreach
+    const emailToSuppress = data.partnerEmail || (() => {
+      // Look up contact by phone if email wasn't provided directly in webhook
+      const contacts = (orchestrator.ingestionService as any).contactsByEmail as Map<string, any> | undefined;
+      if (contacts) {
+        for (const [_, c] of contacts.entries()) {
+          if (c.phone && waHandler.isPhoneActiveOnWhatsApp(c.phone)) {
+            return c.email;
+          }
+        }
+      }
+      return undefined;
+    })();
+
+    if (emailToSuppress) {
+      const contact = orchestrator.ingestionService.getContact(emailToSuppress);
+      if (contact) {
+        contact.status = 'HANDED_OVER';
+      }
+
+      const pendingJobs = worker.getQueue().getAllJobs().filter(
+        j => j.leadEmail.toLowerCase() === emailToSuppress.toLowerCase() && j.status === 'PENDING'
+      );
+      for (const job of pendingJobs) {
+        worker.getQueue().updateJob(job.id, {
+          status: 'SUPPRESSED',
+          lastError: 'ACTIVE_WHATSAPP_CONVERSATION: Email sequence paused due to active WhatsApp conversation.'
+        });
+      }
+    }
+
+    return reply.status(200).send({
+      received: true,
+      ...result
+    });
+  });
+
+  // 3c. WhatsApp Conversations List for Ops UI
+  app.get('/internal/whatsapp/conversations', async () => {
+    return {
+      total: waHandler.conversationLog.length,
+      activePhones: Array.from(waHandler.activeWhatsAppPhones),
+      conversations: waHandler.conversationLog
+    };
+  });
+
+  // 3d. Simulate WhatsApp Message Endpoint (for Testing and Console Demo)
+  const SimulateWhatsAppSchema = z.object({
+    phone: z.string().default('+971501234567'),
+    partnerName: z.string().default('Ahmed Al-Mansoor'),
+    messageBody: z.string().min(1),
+    partnerEmail: z.string().email().optional(),
+    channelId: z.number().int().positive().default(42)
+  });
+
+  app.post('/internal/whatsapp/simulate', async (req, reply) => {
+    const parseResult = SimulateWhatsAppSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({ error: 'BAD_REQUEST', details: parseResult.error.format() });
+    }
+
+    const data = parseResult.data;
+    const result = await waHandler.handleIncoming(data);
+
+    if (data.partnerEmail) {
+      const contact = orchestrator.ingestionService.getContact(data.partnerEmail);
+      if (contact) {
+        contact.status = 'HANDED_OVER';
+      }
+
+      const pendingJobs = worker.getQueue().getAllJobs().filter(
+        j => j.leadEmail.toLowerCase() === data.partnerEmail!.toLowerCase() && j.status === 'PENDING'
+      );
+      for (const job of pendingJobs) {
+        worker.getQueue().updateJob(job.id, {
+          status: 'SUPPRESSED',
+          lastError: 'ACTIVE_WHATSAPP_CONVERSATION: Email sequence paused due to active WhatsApp conversation.'
+        });
+      }
+    }
+
+    return reply.status(200).send({
+      success: true,
+      ...result
+    });
   });
 
   // 4. Emergency Kill Switch Endpoints
@@ -345,6 +586,73 @@ export function buildApp(orchestrator: VerticalSliceOrchestrator = new VerticalS
           )
         : null
     });
+  });
+
+  // 7b. Automation Settings & Dispatch Worker Queue Endpoints
+  app.get('/internal/automation/settings', async () => {
+    return {
+      settings: worker.getSettings(),
+      stats: worker.getStats()
+    };
+  });
+
+  const UpdateSettingsSchema = z.object({
+    schedule: z.object({
+      sendStart: z.string().optional(),
+      sendEnd: z.string().optional(),
+      timezone: z.string().optional(),
+      sendDays: z.array(z.string()).optional(),
+      maxPerDay: z.number().int().positive().optional()
+    }).optional(),
+    cadence: z.object({
+      followupDelayDays: z.number().int().positive().optional(),
+      maxSequenceSteps: z.number().int().positive().optional(),
+      batchIntervalMinutes: z.number().int().positive().optional()
+    }).optional(),
+    retry: z.object({
+      maxRetries: z.number().int().nonnegative().optional(),
+      retryBackoffSeconds: z.number().int().positive().optional(),
+      onBounceAction: z.enum(['suppress', 'retry_once', 'flag']).optional()
+    }).optional(),
+    classification: z.object({
+      confidenceThreshold: z.number().min(0).max(100).optional(),
+      qaMode: z.enum(['full_review', 'sample_review', 'auto']).optional()
+    }).optional()
+  });
+
+  app.post('/internal/automation/settings', async (req, reply) => {
+    const parseResult = UpdateSettingsSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'BAD_REQUEST',
+        details: parseResult.error.format()
+      });
+    }
+
+    const updatedSettings = worker.updateSettings(parseResult.data as any);
+    return reply.status(200).send({
+      success: true,
+      settings: updatedSettings,
+      stats: worker.getStats(),
+      message: 'Automation settings updated and dispatch worker rescheduled successfully.'
+    });
+  });
+
+  app.get('/internal/automation/queue', async () => {
+    return {
+      stats: worker.getStats(),
+      jobs: worker.getQueue().getAllJobs()
+    };
+  });
+
+  app.post('/internal/automation/trigger-batch', async (req) => {
+    const body = (req.body as { forceWindow?: boolean } | undefined) || {};
+    const result = await worker.runBatch(Boolean(body.forceWindow));
+    return {
+      success: true,
+      result,
+      stats: worker.getStats()
+    };
   });
 
   // 8. Serve Operations & Tech Web Console UI

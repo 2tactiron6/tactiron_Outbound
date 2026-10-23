@@ -175,4 +175,35 @@ describe('Operational API & Webhook Endpoints', () => {
     expect(body.replyClassification.guardrailKeywordHit).toBe(true);
     expect(body.handoverDescription).toContain('AI OUTBOUND SALES HANDOVER PACK');
   });
+
+  it('POST /campaigns/queue-leads queues eligible leads and blocks non-compliant leads', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/campaigns/queue-leads',
+      payload: {
+        campaignName: 'Q4 Regional Dispatch Fleet Outbound',
+        leads: [
+          {
+            contactEmail: 'rashid@emiratesdispatch.ae',
+            companyName: 'Emirates Dispatch LLC',
+            complianceAllowed: true
+          },
+          {
+            contactEmail: 'klaus@berlin-spedition.de',
+            companyName: 'Berlin Spedition GmbH',
+            complianceAllowed: false,
+            complianceReason: 'CHANNEL_EMAIL_NOT_PERMITTED_IN_DE'
+          }
+        ]
+      }
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.success).toBe(true);
+    expect(body.queuedCount).toBe(1);
+    expect(body.blockedCount).toBe(1);
+    expect(body.queued[0].email).toBe('rashid@emiratesdispatch.ae');
+    expect(body.blocked[0].email).toBe('klaus@berlin-spedition.de');
+  });
 });

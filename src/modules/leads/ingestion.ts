@@ -14,6 +14,7 @@ export interface RawLeadImport {
   industry?: string;
   teamSize?: number;
   segmentFit?: boolean;
+  companyPhone?: string;
   contactEmail: string;
   firstName?: string;
   lastName?: string;
@@ -69,6 +70,7 @@ export class LeadIngestionService {
         industry: raw.industry,
         segmentFit: raw.segmentFit ?? false,
         teamSize: raw.teamSize,
+        companyPhone: raw.companyPhone?.trim(),
         accountStatus: 'PROSPECT',
         provenance: {
           source: raw.source,
@@ -83,6 +85,7 @@ export class LeadIngestionService {
       // Merge updates without destroying existing verified values
       if (!company.teamSize && raw.teamSize) company.teamSize = raw.teamSize;
       if (!company.industry && raw.industry) company.industry = raw.industry;
+      if (!company.companyPhone && raw.companyPhone) company.companyPhone = raw.companyPhone.trim();
       if (raw.segmentFit !== undefined) company.segmentFit = raw.segmentFit;
       company.updatedAt = now;
     }

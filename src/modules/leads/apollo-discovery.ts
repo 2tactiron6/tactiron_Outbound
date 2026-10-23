@@ -12,6 +12,7 @@ import { Channel, ComplianceDecision, QualificationResult } from '../../core/typ
 export interface PttDiscoveryCriteria {
   countries: string[]; // e.g. ['United Arab Emirates', 'Saudi Arabia', 'Kenya']
   titles?: string[];    // e.g. ['Operations Director', 'Fleet Manager', 'Dispatch Manager']
+  industries?: string[]; // e.g. ['logistics', 'transportation', 'security']
   minEmployees?: number; // e.g. 20
   page?: number;
   perPage?: number;
@@ -37,14 +38,28 @@ const COUNTRY_MAP: Record<string, string> = {
   'united arab emirates': 'AE',
   'uae': 'AE',
   'saudi arabia': 'SA',
+  'ksa': 'SA',
   'kenya': 'KE',
+  'qatar': 'QA',
+  'oman': 'OM',
+  'kuwait': 'KW',
+  'bahrain': 'BH',
   'nigeria': 'NG',
   'south africa': 'ZA',
   'egypt': 'EG',
+  'ghana': 'GH',
+  'tanzania': 'TZ',
+  'uganda': 'UG',
+  'rwanda': 'RW',
   'germany': 'DE',
   'united kingdom': 'GB',
   'uk': 'GB',
-  'france': 'FR'
+  'france': 'FR',
+  'netherlands': 'NL',
+  'spain': 'ES',
+  'italy': 'IT',
+  'united states': 'US',
+  'usa': 'US'
 };
 
 export class ApolloDiscoveryService {
@@ -83,6 +98,7 @@ export class ApolloDiscoveryService {
     const searchParams: ApolloSearchParams = {
       personLocations: criteria.countries,
       personTitles: titles,
+      organizationIndustries: criteria.industries,
       organizationNumEmployeesRanges: ['20,50', '51,200', '201,500', '501,1000', '1001,5000'],
       page: criteria.page || 1,
       perPage: criteria.perPage || 25
@@ -99,7 +115,7 @@ export class ApolloDiscoveryService {
 
       const domain = person.organization?.primary_domain || person.email.split('@')[1];
       const rawCountry = person.country || person.organization?.country || 'AE';
-      const countryCode = COUNTRY_MAP[rawCountry.toLowerCase()] || 'AE';
+      const countryCode = COUNTRY_MAP[rawCountry.toLowerCase()] || (rawCountry.trim().length === 2 ? rawCountry.trim().toUpperCase() : 'AE');
 
       const leadImport: RawLeadImport = {
         companyName: person.organization?.name || domain,
@@ -109,6 +125,7 @@ export class ApolloDiscoveryService {
         industry: person.organization?.industry || 'Transportation/Logistics',
         teamSize: person.organization?.estimated_num_employees || 25,
         segmentFit: true, // Matched PTT logistics/fleet criteria
+        companyPhone: person.organization?.phone,
         contactEmail: person.email,
         firstName: person.first_name,
         lastName: person.last_name,

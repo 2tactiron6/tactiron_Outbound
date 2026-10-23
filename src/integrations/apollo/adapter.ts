@@ -12,6 +12,7 @@ export interface ApolloSearchParams {
   personLocations?: string[];
   organizationLocations?: string[];
   organizationNumEmployeesRanges?: string[]; // E.g., ['20,50', '51,200', '201,500']
+  organizationIndustries?: string[];          // E.g., ['logistics', 'transportation']
   qKeywords?: string;
   page?: number;
   perPage?: number;
@@ -37,6 +38,7 @@ export interface ApolloRawPerson {
     estimated_num_employees?: number;
     industry?: string;
     country?: string;
+    phone?: string;
   };
 }
 
@@ -75,7 +77,8 @@ export class MockApolloAdapter implements IApolloAdapter {
         primary_domain: 'emiratesdispatch.ae',
         estimated_num_employees: 48,
         industry: 'Logistics and Transportation',
-        country: 'United Arab Emirates'
+        country: 'United Arab Emirates',
+        phone: '+97142345678'
       }
     },
     {
@@ -93,7 +96,8 @@ export class MockApolloAdapter implements IApolloAdapter {
         primary_domain: 'kenyafreight.co.ke',
         estimated_num_employees: 75,
         industry: 'Freight & Logistics',
-        country: 'Kenya'
+        country: 'Kenya',
+        phone: '+254201234567'
       }
     },
     {
@@ -110,7 +114,8 @@ export class MockApolloAdapter implements IApolloAdapter {
         primary_domain: 'berlin-spedition.de',
         estimated_num_employees: 120,
         industry: 'Transportation',
-        country: 'Germany'
+        country: 'Germany',
+        phone: '+493012345678'
       }
     }
   ];
@@ -133,6 +138,17 @@ export class MockApolloAdapter implements IApolloAdapter {
           const targetTitle = t.toLowerCase();
           return pTitle.includes(targetTitle) || targetTitle.includes(pTitle) ||
             targetTitle.split(' ').some(w => w.length > 3 && pTitle.includes(w));
+        })
+      );
+    }
+
+    if (params.organizationIndustries?.length) {
+      filtered = filtered.filter(p =>
+        params.organizationIndustries!.some(ind => {
+          const orgIndustry = p.organization?.industry?.toLowerCase() || '';
+          const targetIndustry = ind.toLowerCase();
+          return orgIndustry.includes(targetIndustry) || targetIndustry.includes(orgIndustry) ||
+            targetIndustry.split(/[\s&\/,]+/).some(w => w.length > 3 && orgIndustry.includes(w));
         })
       );
     }
@@ -177,6 +193,7 @@ export class ApolloApiAdapter implements IApolloAdapter {
       person_locations: params.personLocations,
       organization_locations: params.organizationLocations,
       organization_num_employees_ranges: params.organizationNumEmployeesRanges,
+      organization_industries: params.organizationIndustries,
       q_organization_domains: params.qOrganizationDomains?.join('\n'),
       q_keywords: params.qKeywords,
       page: params.page || 1,

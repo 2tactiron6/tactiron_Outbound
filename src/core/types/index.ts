@@ -38,6 +38,7 @@ export interface Company {
   industry?: string;
   segmentFit: boolean;
   teamSize?: number;
+  companyPhone?: string;
   accountStatus: AccountStatus;
   provenance: {
     source: string;

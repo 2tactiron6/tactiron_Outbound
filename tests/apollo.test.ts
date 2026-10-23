@@ -84,7 +84,37 @@ describe('Apollo API Endpoints in Fastify', () => {
     const body = res.json();
     expect(body.success).toBe(true);
     expect(body.report.totalDiscovered).toBeGreaterThan(0);
-    expect(body.report.leads[0].contactEmail).toBeDefined();
+    const lead = body.report.leads[0];
+    expect(lead.contactEmail).toBeDefined();
+    expect(lead.companyName).toBeDefined();
+    expect(lead.jobTitle).toBeDefined();
+    expect(lead.contactName).toBeDefined();
+    expect(lead.country).toBeDefined();
+    expect(lead.industry).toBeDefined();
+    expect(lead.complianceAllowed).toBeDefined();
+    expect(lead.qualificationOutcome).toBeDefined();
+  });
+
+  it('POST /leads/discover/apollo supports industry filtering and returns phone numbers', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/leads/discover/apollo',
+      payload: {
+        countries: ['United Arab Emirates'],
+        industries: ['Logistics and Transportation'],
+        minEmployees: 20
+      }
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.success).toBe(true);
+    expect(body.report.leads.length).toBeGreaterThan(0);
+    const uaeLead = body.report.leads[0];
+    expect(uaeLead.companyName).toBe('Emirates Dispatch LLC');
+    expect(uaeLead.contactPhone).toBe('+971501234567');
+    expect(uaeLead.companyPhone).toBe('+97142345678');
+    expect(uaeLead.industry).toContain('Logistics');
   });
 
   it('POST /leads/import/apollo-csv imports CSV text directly into the system', async () => {
