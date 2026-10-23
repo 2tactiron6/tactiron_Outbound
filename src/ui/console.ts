@@ -1,221 +1,348 @@
 /**
  * Operations & Technical Console UI
- * Clean, enterprise white aesthetic (Stripe / Linear / Datadog style)
+ * Enhanced Enterprise Modern Light Aesthetic (Linear / Stripe style)
+ * Clean monochrome palette, zero green card highlights, unified text colors throughout.
  * Served at /console
  */
 
 export function getConsoleHtml(): string {
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tactiron Operations Console</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          boxShadow: {
+            'card': '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
+            'card-hover': '0 4px 12px 0 rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
+            'subtle': '0 0 0 1px rgba(0, 0, 0, 0.05)',
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      letter-spacing: -0.011em;
+      color: #0f172a; /* Unified primary text color slate-900 */
+    }
     code, pre { font-family: 'JetBrains Mono', monospace; }
+
+    /* Custom sleek scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Micro-interactions */
+    .btn-press {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-press:active {
+      transform: scale(0.98);
+    }
+
+    /* Toast animation */
+    @keyframes toastSlideIn {
+      from {
+        transform: translateY(1rem) scale(0.96);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+    .toast-animate-in {
+      animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col antialiased">
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased selection:bg-slate-200 selection:text-slate-900">
 
-  <!-- Top Navigation Bar (Clean Enterprise White) -->
-  <header class="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+  <!-- ================= TOP NAVIGATION BAR (Linear / Stripe Clean Enterprise) ================= -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 py-3 flex items-center justify-between sticky top-0 z-40 shadow-xs">
     <div class="flex items-center space-x-4">
-      <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-sm">
-        <i class="fa-solid fa-tower-broadcast text-xs"></i>
+      <!-- Brand Icon -->
+      <div class="relative flex items-center justify-center">
+        <div class="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm ring-1 ring-black/10">
+          <i class="fa-solid fa-tower-broadcast text-sm text-slate-200"></i>
+        </div>
+        <span class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-slate-600 rounded-full ring-2 ring-white"></span>
       </div>
+
       <div>
-        <div class="flex items-center space-x-2">
-          <span class="font-bold text-base text-gray-900 tracking-tight">Tactiron Outbound Ops Console</span>
-          <span id="systemStatusBadge" class="text-xs px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active
+        <div class="flex items-center space-x-2.5">
+          <span class="font-extrabold text-base text-slate-900 tracking-tight">Tactiron Outbound Ops Console</span>
+          <span class="text-slate-300">/</span>
+          <span id="systemStatusBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-900 font-semibold flex items-center gap-1.5 transition-all">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-700 animate-pulse"></span>
+            <span>Active</span>
           </span>
         </div>
-
+        <div class="text-[11px] text-slate-500 font-medium">Headless AI Sales &amp; Dispatch Automation</div>
       </div>
     </div>
 
-    <!-- Review Mode & Emergency Stop -->
+    <!-- Review Mode & Emergency Controls -->
     <div class="flex items-center space-x-3">
-      <div class="hidden sm:flex items-center space-x-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md text-xs text-gray-600">
-        <span class="text-gray-400">Review Mode:</span>
-        <span class="font-semibold text-gray-800">Month 1 (100% Pre-Dispatch QA)</span>
+      <div class="hidden sm:flex items-center space-x-2 bg-slate-50 border border-slate-200/90 px-3 py-1.5 rounded-lg text-xs shadow-xs">
+        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+        <span class="text-slate-500 font-medium">Safety Gate:</span>
+        <span class="font-semibold text-slate-900">Month 1 (100% Pre-Dispatch QA)</span>
       </div>
 
-      <button id="killSwitchBtn" onclick="toggleKillSwitch()" class="px-3.5 py-1.5 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5 bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 shadow-sm">
-        <i class="fa-solid fa-power-off text-xs"></i>
+      <button id="killSwitchBtn" onclick="toggleKillSwitch()" class="btn-press px-3.5 py-1.5 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 bg-white text-slate-900 border border-slate-300 hover:bg-slate-100 shadow-xs cursor-pointer">
+        <i class="fa-solid fa-power-off text-xs text-slate-700"></i>
         <span id="killSwitchText">Emergency Stop</span>
       </button>
     </div>
   </header>
 
-  <!-- Main Container -->
+  <!-- ================= MAIN CONTAINER ================= -->
   <div class="flex-1 flex overflow-hidden">
     <!-- Clean Sidebar Navigation -->
-    <aside class="w-60 bg-white border-r border-gray-200 flex flex-col justify-between p-3.5">
-      <nav class="space-y-1">
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition text-gray-900 bg-gray-100 border border-gray-200">
-          <i class="fa-solid fa-chart-pie w-4 text-gray-600 text-center"></i>
-          <span>Overview &amp; KPIs</span>
-        </button>
-
-        <button onclick="switchTab('apollo')" id="nav-apollo" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-          <i class="fa-solid fa-magnifying-glass w-4 text-gray-500 text-center"></i>
-          <span>Apollo Lead Discovery</span>
-        </button>
-
-        <button onclick="switchTab('csv-import')" id="nav-csv-import" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-          <i class="fa-solid fa-file-csv w-4 text-gray-500 text-center"></i>
-          <span>Apollo CSV Import</span>
-        </button>
-
-        <button onclick="switchTab('simulator')" id="nav-simulator" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-          <i class="fa-solid fa-vial-circle-check w-4 text-gray-500 text-center"></i>
-          <span>Reply &amp; Guardrail Lab</span>
-        </button>
-
-        <button onclick="switchTab('automation')" id="nav-automation" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-          <i class="fa-solid fa-gears w-4 text-gray-500 text-center"></i>
-          <span>Automation Settings</span>
-        </button>
-
-        <button onclick="switchTab('handovers')" id="nav-handovers" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-          <i class="fa-solid fa-address-book w-4 text-gray-500 text-center"></i>
-          <span>Odoo CRM Handovers</span>
-        </button>
-
-        <button onclick="switchTab('whatsapp')" id="nav-whatsapp" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-          <i class="fa-brands fa-whatsapp w-4 text-emerald-600 text-center"></i>
-          <span>WhatsApp AI Live</span>
-        </button>
-
-        <button onclick="switchTab('compliance')" id="nav-compliance" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition text-gray-600 hover:text-gray-900 hover:bg-gray-50">
-          <i class="fa-solid fa-scale-balanced w-4 text-gray-500 text-center"></i>
-          <span>Compliance &amp; Policy</span>
-        </button>
-      </nav>
-
-      <!-- Connection Status Card -->
-      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs space-y-1.5">
-        <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Integrations</div>
-        <div class="flex items-center justify-between text-gray-600">
-          <span>Odoo CRM:</span>
-          <span class="text-emerald-700 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Connected</span>
+    <aside class="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-3.5 select-none shadow-xs">
+      <div class="space-y-4">
+        <!-- Section: Overview -->
+        <div>
+          <div class="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Telemetry</div>
+          <nav class="space-y-0.5">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-slate-900 bg-slate-100/90 border border-slate-200/80 shadow-xs">
+              <i class="fa-solid fa-chart-pie w-4 text-slate-700 text-center"></i>
+              <span>Overview &amp; KPIs</span>
+            </button>
+          </nav>
         </div>
-        <div class="flex items-center justify-between text-gray-600">
-          <span>Smartlead:</span>
-          <span class="text-emerald-700 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Ready</span>
+
+        <!-- Section: Lead Engine -->
+        <div>
+          <div class="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Prospect Discovery</div>
+          <nav class="space-y-0.5">
+            <button onclick="switchTab('apollo')" id="nav-apollo" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-50">
+              <i class="fa-solid fa-magnifying-glass w-4 text-slate-400 text-center"></i>
+              <span>Apollo Lead Discovery</span>
+            </button>
+
+            <button onclick="switchTab('csv-import')" id="nav-csv-import" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-50">
+              <i class="fa-solid fa-file-csv w-4 text-slate-400 text-center"></i>
+              <span>Apollo CSV Import</span>
+            </button>
+          </nav>
         </div>
-        <div class="flex items-center justify-between text-gray-600">
-          <span>WhatsApp (Odoo):</span>
-          <span class="text-emerald-700 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Native Active</span>
+
+        <!-- Section: AI Intelligence & Lab -->
+        <div>
+          <div class="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI Guardrails &amp; Channels</div>
+          <nav class="space-y-0.5">
+            <button onclick="switchTab('simulator')" id="nav-simulator" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-50">
+              <i class="fa-solid fa-vial-circle-check w-4 text-slate-400 text-center"></i>
+              <span>Reply &amp; Guardrail Lab</span>
+            </button>
+
+            <button onclick="switchTab('whatsapp')" id="nav-whatsapp" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-50">
+              <i class="fa-brands fa-whatsapp w-4 text-slate-500 text-center"></i>
+              <span class="flex-1 text-left">WhatsApp AI Live</span>
+              <span class="text-[9px] bg-slate-100 text-slate-800 border border-slate-200 px-1.5 py-0.2 rounded font-bold">24H</span>
+            </button>
+          </nav>
         </div>
-        <div class="flex items-center justify-between text-gray-600">
-          <span>Classifier:</span>
-          <span class="text-gray-900 font-semibold">Claude 3.5</span>
+
+        <!-- Section: Infrastructure -->
+        <div>
+          <div class="px-3 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Engine &amp; CRM</div>
+          <nav class="space-y-0.5">
+            <button onclick="switchTab('automation')" id="nav-automation" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-50">
+              <i class="fa-solid fa-gears w-4 text-slate-400 text-center"></i>
+              <span>Automation Settings</span>
+            </button>
+
+            <button onclick="switchTab('handovers')" id="nav-handovers" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-50">
+              <i class="fa-solid fa-address-book w-4 text-slate-400 text-center"></i>
+              <span>Odoo CRM Handovers</span>
+            </button>
+
+            <button onclick="switchTab('compliance')" id="nav-compliance" class="tab-btn w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition text-slate-600 hover:text-slate-900 hover:bg-slate-50">
+              <i class="fa-solid fa-scale-balanced w-4 text-slate-400 text-center"></i>
+              <span>Compliance &amp; Policy</span>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Live Integration Ping Card (Clean Neutral) -->
+      <div class="bg-slate-50/80 border border-slate-200/90 rounded-xl p-3 text-xs space-y-2 shadow-xs">
+        <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <span>Connected Systems</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+        </div>
+        <div class="space-y-1.5 text-[11px]">
+          <div class="flex items-center justify-between text-slate-700">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-database text-[10px] text-slate-400"></i> Odoo CRM:</span>
+            <span class="text-slate-900 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span> Connected</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-700">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-envelope text-[10px] text-slate-400"></i> Smartlead:</span>
+            <span class="text-slate-900 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span> Ready</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-700">
+            <span class="flex items-center gap-1.5"><i class="fa-brands fa-whatsapp text-[10px] text-slate-400"></i> WhatsApp:</span>
+            <span class="text-slate-900 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span> Native Active</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-700 border-t border-slate-200/60 pt-1.5">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-brain text-[10px] text-slate-400"></i> Classifier:</span>
+            <span class="text-slate-900 font-semibold font-mono text-[10px]">Claude 3.5</span>
+          </div>
         </div>
       </div>
     </aside>
 
-    <!-- Main Workspace -->
-    <main class="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 bg-gray-50">
+    <!-- ================= MAIN WORKSPACE ================= -->
+    <main class="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 bg-slate-50/70">
 
       <!-- ================= TAB 1: OVERVIEW & KPIS ================= -->
       <section id="tab-dashboard" class="space-y-6">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900 tracking-tight">System Performance &amp; Operational Health</h2>
-          <p class="text-xs text-gray-500">Pipeline throughput, compliance enforcement, and human handover response targets.</p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-4">
+          <div>
+            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">System Performance &amp; Operational Health</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Pipeline throughput, compliance enforcement, and human handover response targets.</p>
+          </div>
+          <button onclick="loadKpis()" class="btn-press self-start sm:self-auto px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:border-slate-300 shadow-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate-right text-xs text-slate-400"></i>
+            <span>Refresh Telemetry</span>
+          </button>
         </div>
 
-        <!-- Metric Cards Grid -->
+        <!-- Metric Cards Grid (Zero green card highlights, clean unified monochrome) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div class="flex items-center justify-between text-gray-500 text-xs font-semibold uppercase tracking-wider">
+          <!-- Card 1 -->
+          <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-card hover:shadow-card-hover transition-all">
+            <div class="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
               <span>Leads Handed Over</span>
-              <i class="fa-solid fa-handshake text-gray-400"></i>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+                <i class="fa-solid fa-handshake text-xs"></i>
+              </div>
             </div>
-            <div class="mt-2 flex items-baseline gap-2">
-              <span id="metric-handovers" class="text-2xl font-bold text-gray-900">0</span>
-              <span class="text-xs text-emerald-600 font-semibold">To Sales Reps</span>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="metric-handovers" class="text-3xl font-extrabold text-slate-900 tracking-tight">0</span>
+              <span class="text-xs text-slate-800 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-bold">To Sales Reps</span>
             </div>
-            <p class="mt-1 text-xs text-gray-500">Synced to Odoo with full 6-item pack</p>
+            <p class="mt-2 text-xs text-slate-500 leading-relaxed">Synced to Odoo CRM with full 6-item pack</p>
           </div>
 
-          <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div class="flex items-center justify-between text-gray-500 text-xs font-semibold uppercase tracking-wider">
+          <!-- Card 2 -->
+          <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-card hover:shadow-card-hover transition-all">
+            <div class="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
               <span>Missed Escalations</span>
-              <i class="fa-solid fa-circle-exclamation text-gray-400"></i>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+                <i class="fa-solid fa-circle-check text-xs"></i>
+              </div>
             </div>
-            <div class="mt-2 flex items-baseline gap-2">
-              <span id="metric-missed" class="text-2xl font-bold text-gray-900">0</span>
-              <span class="text-xs text-emerald-600 font-semibold">On Target (0)</span>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="metric-missed" class="text-3xl font-extrabold text-slate-900 tracking-tight">0</span>
+              <span class="text-xs text-slate-800 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-bold">On Target (0)</span>
             </div>
-            <p class="mt-1 text-xs text-gray-500">Any missed trigger requires investigation</p>
+            <p class="mt-2 text-xs text-slate-500 leading-relaxed">Zero missed SLA triggers across all channels</p>
           </div>
 
-          <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div class="flex items-center justify-between text-gray-500 text-xs font-semibold uppercase tracking-wider">
+          <!-- Card 3 -->
+          <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-card hover:shadow-card-hover transition-all">
+            <div class="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
               <span>Outreach Permitted</span>
-              <i class="fa-solid fa-shield-halved text-gray-400"></i>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+                <i class="fa-solid fa-shield-halved text-xs"></i>
+              </div>
             </div>
-            <div class="mt-2 flex items-baseline gap-2">
-              <span id="metric-permitted" class="text-2xl font-bold text-gray-900">100%</span>
-              <span class="text-xs text-blue-600 font-semibold">Passed Gates</span>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="metric-permitted" class="text-3xl font-extrabold text-slate-900 tracking-tight">100%</span>
+              <span class="text-xs text-slate-800 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-bold">Passed Gates</span>
             </div>
-            <p class="mt-1 text-xs text-gray-500">Verified lawful basis &amp; unsuppressed</p>
+            <p class="mt-2 text-xs text-slate-500 leading-relaxed">Verified lawful basis &amp; zero suppression conflicts</p>
           </div>
 
-          <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div class="flex items-center justify-between text-gray-500 text-xs font-semibold uppercase tracking-wider">
+          <!-- Card 4 -->
+          <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-card hover:shadow-card-hover transition-all">
+            <div class="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
               <span>Min Fleet Size</span>
-              <i class="fa-solid fa-users text-gray-400"></i>
+              <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+                <i class="fa-solid fa-truck-front text-xs"></i>
+              </div>
             </div>
-            <div class="mt-2 flex items-baseline gap-2">
-              <span id="metric-teamsize" class="text-2xl font-bold text-gray-900">20+</span>
-              <span class="text-xs text-gray-600 font-semibold">Employees</span>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span id="metric-teamsize" class="text-3xl font-extrabold text-slate-900 tracking-tight">20+</span>
+              <span class="text-xs text-slate-800 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-bold">Vehicles / Staff</span>
             </div>
-            <p class="mt-1 text-xs text-gray-500">Excel qualification threshold</p>
+            <p class="mt-2 text-xs text-slate-500 leading-relaxed">Operational qualification threshold enforced</p>
           </div>
         </div>
 
-        <!-- SLA Response Targets Table -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-3 shadow-sm">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-              <i class="fa-regular fa-clock text-gray-500"></i> Response Target SLAs (AI-to-Human Handover Rules)
+        <!-- SLA Response Targets Table (Clean Neutral Cards) -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-regular fa-clock text-slate-400 text-sm"></i> Response Target SLAs (AI-to-Human Handover Rules)
             </h3>
-            <span class="text-xs text-gray-500">From approved rules spreadsheet</span>
+            <span class="text-[11px] text-slate-500 font-medium">From approved handover protocol</span>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-            <div class="border border-gray-200 bg-gray-50/60 p-3.5 rounded-lg space-y-1">
+            <div class="border border-slate-200 bg-slate-50/50 p-4 rounded-xl space-y-2 shadow-xs">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-rose-700 uppercase tracking-wide">Urgent Priority</span>
-                <span class="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded border border-rose-200 font-semibold">&lt; 1 Hour</span>
+                <span class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span> Urgent Priority
+                </span>
+                <span class="text-xs bg-slate-200/70 text-slate-900 px-2.5 py-0.5 rounded-full border border-slate-300 font-bold">&lt; 1 Hour</span>
               </div>
-              <h4 class="font-semibold text-gray-900 text-xs">Demo / Meeting Requests</h4>
-              <p class="text-xs text-gray-500 leading-relaxed">Highest-priority buying signal. Sales rep contacts within 1 hour; AI sends one holding reply.</p>
+              <h4 class="font-bold text-slate-900 text-sm">Demo / Meeting Requests</h4>
+              <p class="text-xs text-slate-600 leading-relaxed">Highest-priority buying signal. Sales rep contacts within 1 hour; AI dispatches one verified holding reply.</p>
             </div>
 
-            <div class="border border-gray-200 bg-gray-50/60 p-3.5 rounded-lg space-y-1">
+            <div class="border border-slate-200 bg-slate-50/50 p-4 rounded-xl space-y-2 shadow-xs">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-amber-700 uppercase tracking-wide">Standard Priority</span>
-                <span class="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 font-semibold">&lt; 4 Hours</span>
+                <span class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span> Standard Priority
+                </span>
+                <span class="text-xs bg-slate-200/70 text-slate-900 px-2.5 py-0.5 rounded-full border border-slate-300 font-bold">&lt; 4 Hours</span>
               </div>
-              <h4 class="font-semibold text-gray-900 text-xs">Pricing, Contracts, SLAs &amp; Partners</h4>
-              <p class="text-xs text-gray-500 leading-relaxed">AI is strictly barred from quoting prices. AI dispatches holding message; sales rep prepares custom quote.</p>
+              <h4 class="font-bold text-slate-900 text-sm">Pricing, Contracts, SLAs &amp; Partners</h4>
+              <p class="text-xs text-slate-600 leading-relaxed">AI is strictly barred from quoting prices. AI dispatches holding message; sales rep prepares custom quotation.</p>
             </div>
 
-            <div class="border border-gray-200 bg-gray-50/60 p-3.5 rounded-lg space-y-1">
+            <div class="border border-slate-200 bg-slate-50/50 p-4 rounded-xl space-y-2 shadow-xs">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-purple-700 uppercase tracking-wide">Compliance Route</span>
-                <span class="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200 font-semibold">&lt; 1 Business Day</span>
+                <span class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span> Compliance Route
+                </span>
+                <span class="text-xs bg-slate-200/70 text-slate-900 px-2.5 py-0.5 rounded-full border border-slate-300 font-bold">&lt; 1 Business Day</span>
               </div>
-              <h4 class="font-semibold text-gray-900 text-xs">Legal Threats, GDPR &amp; Complaints</h4>
-              <p class="text-xs text-gray-500 leading-relaxed">Direct escalation to Compliance Officer (not sales). AI sends no sales message.</p>
+              <h4 class="font-bold text-slate-900 text-sm">Legal Threats, GDPR &amp; Complaints</h4>
+              <p class="text-xs text-slate-600 leading-relaxed">Direct escalation to Compliance Officer (not sales). AI sends no sales outreach and suppresses email.</p>
             </div>
           </div>
         </div>
@@ -223,128 +350,128 @@ export function getConsoleHtml(): string {
 
       <!-- ================= TAB 2: APOLLO LEAD DISCOVERY ================= -->
       <section id="tab-apollo" class="space-y-6 hidden">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900 tracking-tight">Apollo ICP Lead Discovery</h2>
-          <p class="text-xs text-gray-500">Filter and search Apollo.io by target market, industry, and role with verified phone numbers, company dispatch lines, and compliance routing.</p>
+        <div class="border-b border-slate-200/80 pb-4">
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Apollo ICP Lead Discovery</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Filter and search Apollo.io by target market, industry, and role with verified phone numbers, company dispatch lines, and compliance routing.</p>
         </div>
 
         <!-- Filter Form -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-5 shadow-sm">
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-5 shadow-card">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <!-- 1. Target Markets / Countries (Select or Type) -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">1. Target Market / Country</label>
-                <span class="text-[10px] text-gray-400 font-medium">Select or Type</span>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">1. Target Market / Country</label>
+                <span class="text-[10px] text-slate-400 font-medium">Select or Type</span>
               </div>
-              <div class="space-y-1.5 text-xs text-gray-700 bg-gray-50 border border-gray-200 p-3 rounded-md max-h-44 overflow-y-auto">
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="country" value="United Arab Emirates" checked class="rounded border-gray-300 text-slate-900 focus:ring-0">
+              <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50/80 border border-slate-200 rounded-lg p-3 max-h-44 overflow-y-auto">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="country" value="United Arab Emirates" checked class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>United Arab Emirates (GCC)</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="country" value="Saudi Arabia" checked class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="country" value="Saudi Arabia" checked class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Saudi Arabia (GCC)</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="country" value="Kenya" checked class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="country" value="Kenya" checked class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Kenya (East Africa)</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="country" value="Egypt" class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="country" value="Egypt" class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Egypt (North Africa)</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="country" value="Qatar" class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="country" value="Qatar" class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Qatar (GCC)</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="country" value="Germany" class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="country" value="Germany" class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Germany (Strict Opt-In Test)</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="country" value="United Kingdom" class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="country" value="United Kingdom" class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>United Kingdom (Europe)</span>
                 </label>
               </div>
-              <input type="text" id="apolloCustomMarkets" placeholder="Type custom countries (e.g. Oman, Kuwait, South Africa)..." class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 placeholder-gray-400 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <input type="text" id="apolloCustomMarkets" placeholder="Type custom countries (e.g. Oman, Kuwait, South Africa)..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none transition">
             </div>
 
             <!-- 2. Target Industry (Select or Type) -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">2. Industry</label>
-                <span class="text-[10px] text-gray-400 font-medium">Select or Type</span>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">2. Industry</label>
+                <span class="text-[10px] text-slate-400 font-medium">Select or Type</span>
               </div>
-              <div class="space-y-1.5 text-xs text-gray-700 bg-gray-50 border border-gray-200 p-3 rounded-md max-h-44 overflow-y-auto">
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="industry" value="Logistics and Transportation" checked class="rounded border-gray-300 text-slate-900 focus:ring-0">
+              <div class="space-y-1.5 text-xs text-slate-700 bg-slate-50/80 border border-slate-200 rounded-lg p-3 max-h-44 overflow-y-auto">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="industry" value="Logistics and Transportation" checked class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Logistics &amp; Transportation</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="industry" value="Freight & Cargo" checked class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="industry" value="Freight & Cargo" checked class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Freight &amp; Cargo Services</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="industry" value="Security & Guarding" class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="industry" value="Security & Guarding" class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Security &amp; Guarding Fleet</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="industry" value="Courier & Delivery" class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="industry" value="Courier & Delivery" class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Courier &amp; Last-Mile Delivery</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="industry" value="Construction & Mining" class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="industry" value="Construction & Mining" class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Construction &amp; Mining Fleet</span>
                 </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" name="industry" value="Transportation" class="rounded border-gray-300 text-slate-900 focus:ring-0">
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-slate-900">
+                  <input type="checkbox" name="industry" value="Transportation" class="rounded border-slate-300 text-slate-900 focus:ring-0">
                   <span>Transportation &amp; Spedition</span>
                 </label>
               </div>
-              <input type="text" id="apolloCustomIndustries" placeholder="Type custom industries (e.g. Utilities, Aviation Ground)..." class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 placeholder-gray-400 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <input type="text" id="apolloCustomIndustries" placeholder="Type custom industries (e.g. Utilities, Aviation Ground)..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none transition">
             </div>
 
             <!-- 3. Target Job Roles / Positions (Select or Type) -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">3. Job Role / Position</label>
-                <span class="text-[10px] text-gray-400 font-medium">Select or Type</span>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">3. Job Role / Position</label>
+                <span class="text-[10px] text-slate-400 font-medium">Select or Type</span>
               </div>
               <!-- Role Quick-select Chips -->
               <div class="flex flex-wrap gap-1">
-                <button type="button" onclick="toggleApolloRole('Operations Director')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 transition">+ Ops Director</button>
-                <button type="button" onclick="toggleApolloRole('Fleet Manager')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 transition">+ Fleet Mgr</button>
-                <button type="button" onclick="toggleApolloRole('Dispatch Manager')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 transition">+ Dispatch Mgr</button>
-                <button type="button" onclick="toggleApolloRole('Head of Logistics')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 transition">+ Logistics Head</button>
-                <button type="button" onclick="toggleApolloRole('Transport Manager')" class="px-2 py-0.5 rounded text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 transition">+ Transport Mgr</button>
+                <button type="button" onclick="toggleApolloRole('Operations Director')" class="btn-press px-2 py-0.5 rounded-md text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition font-medium">+ Ops Director</button>
+                <button type="button" onclick="toggleApolloRole('Fleet Manager')" class="btn-press px-2 py-0.5 rounded-md text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition font-medium">+ Fleet Mgr</button>
+                <button type="button" onclick="toggleApolloRole('Dispatch Manager')" class="btn-press px-2 py-0.5 rounded-md text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition font-medium">+ Dispatch Mgr</button>
+                <button type="button" onclick="toggleApolloRole('Head of Logistics')" class="btn-press px-2 py-0.5 rounded-md text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition font-medium">+ Logistics Head</button>
+                <button type="button" onclick="toggleApolloRole('Transport Manager')" class="btn-press px-2 py-0.5 rounded-md text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition font-medium">+ Transport Mgr</button>
               </div>
-              <textarea id="apolloTitles" rows="4" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2.5 text-xs text-gray-800 font-mono focus:bg-white focus:border-gray-400 focus:outline-none">Operations Director
+              <textarea id="apolloTitles" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 font-mono focus:bg-white focus:outline-none transition leading-relaxed">Operations Director
 Fleet Manager
 Dispatch Manager
 Head of Logistics
 Transport Manager</textarea>
-              <span class="text-[11px] text-gray-400">One role per line or click chips above</span>
+              <span class="text-[11px] text-slate-400">One role per line or click chips above</span>
             </div>
           </div>
 
           <!-- Secondary Criteria: Team Size & Page -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
             <div>
-              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Minimum Fleet / Team Size</label>
-              <input type="number" id="apolloMinTeam" value="20" class="mt-1 w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs font-semibold text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
-              <span class="text-[11px] text-gray-400">Excel qualification threshold is 20+</span>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Minimum Fleet / Team Size</label>
+              <input type="number" id="apolloMinTeam" value="20" class="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none transition">
+              <span class="text-[11px] text-slate-400">Excel qualification threshold is 20+</span>
             </div>
             <div>
-              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Batch Size Per Page</label>
-              <input type="number" id="apolloPerPage" value="10" max="50" class="mt-1 w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
-              <span class="text-[11px] text-gray-400">Maximum 50 records per query batch</span>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Batch Size Per Page</label>
+              <input type="number" id="apolloPerPage" value="10" max="50" class="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
+              <span class="text-[11px] text-slate-400">Maximum 50 records per query batch</span>
             </div>
           </div>
 
-          <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-            <span class="text-xs text-gray-500">Leads are extracted with contact phone, direct company line, and run through the Compliance Router.</span>
-            <button onclick="runApolloDiscovery()" id="btnApolloSearch" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-md transition shadow-sm flex items-center gap-2">
+          <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span class="text-xs text-slate-500">Leads are extracted with direct contact phone, company dispatch line, and evaluated by the Compliance Router.</span>
+            <button onclick="runApolloDiscovery()" id="btnApolloSearch" class="btn-press px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition shadow-sm flex items-center justify-center gap-2 cursor-pointer">
               <i class="fa-solid fa-magnifying-glass text-xs"></i>
               <span>Discover &amp; Pipeline from Apollo</span>
             </button>
@@ -352,35 +479,35 @@ Transport Manager</textarea>
         </div>
 
         <!-- Discovery Results -->
-        <div id="apolloResultsContainer" class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm hidden">
+        <div id="apolloResultsContainer" class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card hidden">
           <!-- Results Header & Stats -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
             <div>
-              <h3 class="font-bold text-gray-900 text-xs uppercase tracking-wide">Apollo Discovery Results</h3>
-              <p class="text-[11px] text-gray-500">Extracted contact coordinates, direct phone numbers, and automated compliance &amp; qualification classification.</p>
+              <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wide">Apollo Discovery Results</h3>
+              <p class="text-[11px] text-slate-500">Extracted contact coordinates, direct phone numbers, and automated compliance &amp; qualification classification.</p>
             </div>
-            <div id="apolloResultStats" class="text-xs text-gray-600 space-x-2"></div>
+            <div id="apolloResultStats" class="text-xs text-slate-700 flex items-center gap-2"></div>
           </div>
 
           <!-- Actions Bar: Select All & Push to Campaign + Export to CSV -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 border border-gray-200 rounded-md p-2.5 gap-2.5 text-xs">
-            <div class="flex items-center space-x-3 text-gray-700">
-              <label class="flex items-center space-x-1.5 cursor-pointer font-medium">
-                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllLeads(this.checked)" class="rounded border-gray-300 text-slate-900 focus:ring-0">
-                <span>Select All (<span id="apolloSelectedCount" class="font-bold text-gray-900">0</span> selected)</span>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50/90 border border-slate-200 rounded-lg p-3 gap-3 text-xs">
+            <div class="flex items-center space-x-3 text-slate-700">
+              <label class="flex items-center space-x-2 cursor-pointer font-semibold text-slate-900">
+                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllLeads(this.checked)" class="rounded border-slate-300 text-slate-900 focus:ring-0">
+                <span>Select All (<span id="apolloSelectedCount" class="font-bold text-slate-900">0</span> selected)</span>
               </label>
-              <span class="text-gray-300">|</span>
-              <button type="button" onclick="selectOnlyEligibleLeads()" class="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold underline">Select Eligible Only</button>
-              <button type="button" onclick="toggleSelectAllLeads(false)" class="text-[11px] text-gray-500 hover:text-gray-700 underline">Clear</button>
+              <span class="text-slate-300">|</span>
+              <button type="button" onclick="selectOnlyEligibleLeads()" class="text-[11px] text-slate-800 hover:text-slate-900 font-semibold underline">Select Eligible Only</button>
+              <button type="button" onclick="toggleSelectAllLeads(false)" class="text-[11px] text-slate-500 hover:text-slate-700 underline">Clear</button>
             </div>
 
             <div class="flex items-center space-x-2">
-              <button type="button" onclick="pushSelectedToCampaign()" id="btnPushCampaign" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded transition shadow-sm flex items-center gap-1.5">
+              <button type="button" onclick="pushSelectedToCampaign()" id="btnPushCampaign" class="btn-press px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5">
                 <i class="fa-solid fa-paper-plane text-xs"></i>
                 <span id="btnPushCampaignText">Select All &amp; Push to Campaign</span>
               </button>
 
-              <button type="button" onclick="exportApolloResultsCsv()" id="btnExportCsv" class="px-3.5 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 font-semibold text-xs rounded transition shadow-sm flex items-center gap-1.5">
+              <button type="button" onclick="exportApolloResultsCsv()" id="btnExportCsv" class="btn-press px-3.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5">
                 <i class="fa-solid fa-file-arrow-down text-xs"></i>
                 <span>Export to CSV</span>
               </button>
@@ -388,30 +515,30 @@ Transport Manager</textarea>
           </div>
 
           <!-- Live Alert Banner for Actions -->
-          <div id="apolloActionAlert" class="hidden p-3 rounded-md text-xs font-medium border flex items-center justify-between">
+          <div id="apolloActionAlert" class="hidden p-3.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 text-slate-900 flex items-center justify-between">
             <span id="apolloActionAlertText"></span>
-            <button type="button" onclick="this.parentElement.classList.add('hidden')" class="text-gray-400 hover:text-gray-600 ml-2">&times;</button>
+            <button type="button" onclick="this.parentElement.classList.add('hidden')" class="text-slate-400 hover:text-slate-600 ml-2">&times;</button>
           </div>
 
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto border border-slate-200 rounded-lg">
             <table class="w-full text-left text-xs">
-              <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider text-[11px] border-b border-gray-200">
+              <thead class="bg-slate-50 text-slate-700 uppercase tracking-wider text-[11px] border-b border-slate-200">
                 <tr>
                   <th class="p-3 w-8 text-center">
                     <span class="sr-only">Select</span>
                   </th>
-                  <th class="p-3">Company</th>
-                  <th class="p-3">Job Role / Position</th>
-                  <th class="p-3">Name</th>
-                  <th class="p-3">Email</th>
-                  <th class="p-3">Phone Number</th>
-                  <th class="p-3">Company Phone</th>
-                  <th class="p-3">Country</th>
-                  <th class="p-3">Industry</th>
-                  <th class="p-3">Classification</th>
+                  <th class="p-3 font-bold">Company</th>
+                  <th class="p-3 font-bold">Job Role / Position</th>
+                  <th class="p-3 font-bold">Name</th>
+                  <th class="p-3 font-bold">Email</th>
+                  <th class="p-3 font-bold">Phone Number</th>
+                  <th class="p-3 font-bold">Company Phone</th>
+                  <th class="p-3 font-bold">Country</th>
+                  <th class="p-3 font-bold">Industry</th>
+                  <th class="p-3 font-bold">Classification</th>
                 </tr>
               </thead>
-              <tbody id="apolloResultsTbody" class="divide-y divide-gray-100"></tbody>
+              <tbody id="apolloResultsTbody" class="divide-y divide-slate-100 bg-white"></tbody>
             </table>
           </div>
         </div>
@@ -419,53 +546,53 @@ Transport Manager</textarea>
 
       <!-- ================= TAB 3: APOLLO CSV IMPORT ================= -->
       <section id="tab-csv-import" class="space-y-6 hidden">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900 tracking-tight">Apollo CSV Batch Importer</h2>
-          <p class="text-xs text-gray-500">Import saved searches and exported lists from your Apollo seats directly into the pipeline.</p>
+        <div class="border-b border-slate-200/80 pb-4">
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Apollo CSV Batch Importer</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Import saved searches and exported lists from your Apollo seats directly into the pipeline.</p>
         </div>
 
-        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm">
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card">
           <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Paste Apollo Export CSV Text</label>
-            <textarea id="csvTextInput" rows="8" placeholder="First Name,Last Name,Title,Company,Email,Email Status,# Employees,Country,Website..." class="w-full bg-gray-50 border border-gray-200 rounded-md p-3 text-xs text-gray-800 font-mono focus:bg-white focus:border-gray-400 focus:outline-none"></textarea>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Paste Apollo Export CSV Text</label>
+            <textarea id="csvTextInput" rows="8" placeholder="First Name,Last Name,Title,Company,Email,Email Status,# Employees,Country,Website..." class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-800 font-mono focus:bg-white focus:outline-none transition leading-relaxed"></textarea>
           </div>
 
-          <div class="flex items-center justify-between">
-            <button onclick="loadSampleCsv()" class="text-xs text-gray-600 hover:text-gray-900 underline font-medium">Load Sample Apollo CSV</button>
-            <button onclick="submitCsvImport()" id="btnSubmitCsv" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-md transition shadow-sm flex items-center gap-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <button onclick="loadSampleCsv()" class="text-xs text-slate-800 hover:text-slate-900 underline font-medium text-left">Load Sample Apollo CSV Template</button>
+            <button onclick="submitCsvImport()" id="btnSubmitCsv" class="btn-press px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition shadow-sm flex items-center justify-center gap-2">
               <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
               <span>Import &amp; Process CSV</span>
             </button>
           </div>
 
-          <div id="csvResultBox" class="mt-3 p-3.5 rounded-md bg-gray-50 border border-gray-200 text-xs hidden"></div>
+          <div id="csvResultBox" class="mt-3 p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs hidden"></div>
         </div>
       </section>
 
       <!-- ================= TAB 4: SIMULATOR & GUARDRAIL LAB ================= -->
       <section id="tab-simulator" class="space-y-6 hidden">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900 tracking-tight">Inbound Reply & Guardrail Testing Lab</h2>
-          <p class="text-xs text-gray-500">Test how prospect responses are classified, scan for the 7 Excel guardrail keywords, and inspect the Odoo Handover Pack.</p>
+        <div class="border-b border-slate-200/80 pb-4">
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Inbound Reply & Guardrail Testing Lab</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Test how prospect responses are classified, scan for the 7 Excel guardrail keywords, and inspect the Odoo Handover Pack.</p>
         </div>
 
-        <!-- Quick Scenario Buttons -->
+        <!-- Quick Scenario Buttons (Monochrome Slate) -->
         <div class="space-y-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Preset Scenario Quick-Fill:</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Preset Scenario Quick-Fill:</span>
           <div class="flex flex-wrap gap-2">
-            <button onclick="fillSimulator('Hi, we have 45 fleet vehicles in Dubai. Can you schedule a demo tomorrow at 2 PM?')" class="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-emerald-800 rounded-md text-xs font-semibold shadow-sm">
+            <button onclick="fillSimulator('Hi, we have 45 fleet vehicles in Dubai. Can you schedule a demo tomorrow at 2 PM?')" class="btn-press px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 rounded-lg text-xs font-semibold shadow-xs">
               Demo Request (&lt; 1h SLA)
             </button>
-            <button onclick="fillSimulator('Please send me a quote and pricing sheet for 50 handheld devices.')" class="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-amber-800 rounded-md text-xs font-semibold shadow-sm">
+            <button onclick="fillSimulator('Please send me a quote and pricing sheet for 50 handheld devices.')" class="btn-press px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 rounded-lg text-xs font-semibold shadow-xs">
               Pricing Keyword Guardrail (&lt; 4h SLA)
             </button>
-            <button onclick="fillSimulator('We are a telecom reseller in Nairobi interested in distributor margins.')" class="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-blue-800 rounded-md text-xs font-semibold shadow-sm">
+            <button onclick="fillSimulator('We are a telecom reseller in Nairobi interested in distributor margins.')" class="btn-press px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 rounded-lg text-xs font-semibold shadow-xs">
               Partner Inquiry (&lt; 4h SLA)
             </button>
-            <button onclick="fillSimulator('This email violates GDPR. My lawyer will contact your company.')" class="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-purple-800 rounded-md text-xs font-semibold shadow-sm">
+            <button onclick="fillSimulator('This email violates GDPR. My lawyer will contact your company.')" class="btn-press px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 rounded-lg text-xs font-semibold shadow-xs">
               Legal/GDPR Escalation (&lt; 24h SLA)
             </button>
-            <button onclick="fillSimulator('Please remove me from your list. Unsubscribe immediately.')" class="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-rose-800 rounded-md text-xs font-semibold shadow-sm">
+            <button onclick="fillSimulator('Please remove me from your list. Unsubscribe immediately.')" class="btn-press px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 rounded-lg text-xs font-semibold shadow-xs">
               Opt-Out / Unsubscribe (Auto Suppress)
             </button>
           </div>
@@ -473,17 +600,19 @@ Transport Manager</textarea>
 
         <!-- Simulator Form & Output Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm">
-            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Simulated Inbound Message</h3>
+          <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card">
+            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-envelope-open-text text-slate-400"></i> Simulated Inbound Message
+            </h3>
             
             <div class="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <label class="block text-gray-500 font-medium">Company Name</label>
-                <input id="simCompany" value="Gulf Logistics Fleet LLC" class="mt-1 w-full bg-gray-50 border border-gray-200 rounded p-2 text-xs text-gray-800 focus:bg-white focus:outline-none">
+                <label class="block text-slate-500 font-medium">Company Name</label>
+                <input id="simCompany" value="Gulf Logistics Fleet LLC" class="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
               </div>
               <div>
-                <label class="block text-gray-500 font-medium">Country</label>
-                <select id="simCountry" class="mt-1 w-full bg-gray-50 border border-gray-200 rounded p-2 text-xs text-gray-800 focus:bg-white focus:outline-none">
+                <label class="block text-slate-500 font-medium">Country</label>
+                <select id="simCountry" class="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
                   <option value="AE">UAE (GCC)</option>
                   <option value="SA">Saudi Arabia (GCC)</option>
                   <option value="KE">Kenya (Africa)</option>
@@ -491,62 +620,63 @@ Transport Manager</textarea>
                 </select>
               </div>
               <div>
-                <label class="block text-gray-500 font-medium">Contact Email</label>
-                <input id="simEmail" value="operations@gulflogistics.ae" class="mt-1 w-full bg-gray-50 border border-gray-200 rounded p-2 text-xs text-gray-800 focus:bg-white focus:outline-none">
+                <label class="block text-slate-500 font-medium">Contact Email</label>
+                <input id="simEmail" value="operations@gulflogistics.ae" class="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
               </div>
               <div>
-                <label class="block text-gray-500 font-medium">Fleet / Team Size</label>
-                <input id="simTeamSize" type="number" value="45" class="mt-1 w-full bg-gray-50 border border-gray-200 rounded p-2 text-xs text-gray-800 focus:bg-white focus:outline-none">
+                <label class="block text-slate-500 font-medium">Fleet / Team Size</label>
+                <input id="simTeamSize" type="number" value="45" class="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
               </div>
             </div>
 
             <div class="space-y-1">
-              <label class="block text-xs font-medium text-gray-700">Reply Message Text</label>
-              <textarea id="simReplyText" rows="4" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2.5 text-xs text-gray-800 font-mono focus:bg-white focus:border-gray-400 focus:outline-none">Can we get a demo tomorrow at 2 PM for our 45 drivers?</textarea>
+              <label class="block text-xs font-medium text-slate-700">Reply Message Text</label>
+              <textarea id="simReplyText" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 font-mono focus:bg-white focus:outline-none transition">Can we get a demo tomorrow at 2 PM for our 45 drivers?</textarea>
             </div>
 
-            <button onclick="runSimulation()" id="btnRunSim" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-md transition shadow-sm flex items-center justify-center gap-2">
+            <button onclick="runSimulation()" id="btnRunSim" class="btn-press w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition shadow-sm flex items-center justify-center gap-2 cursor-pointer">
               <i class="fa-solid fa-play text-xs"></i>
               <span>Execute Reply &amp; Classification Test</span>
             </button>
           </div>
 
-          <!-- Simulator Analysis Output -->
-          <div id="simOutputBox" class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm text-xs">
-            <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
-              <span class="text-xs font-bold text-gray-900 uppercase tracking-wider">Classification &amp; Handover Decision</span>
-              <span id="simBadge" class="text-xs px-2.5 py-0.5 rounded font-bold uppercase bg-gray-100 text-gray-600 border border-gray-200">Ready</span>
+          <!-- Simulator Analysis Output (Clean Neutral) -->
+          <div id="simOutputBox" class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card text-xs">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">Classification &amp; Handover Decision</span>
+              <span id="simBadge" class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase bg-slate-100 text-slate-800 border border-slate-200">Ready</span>
             </div>
 
-            <div id="simEmptyNotice" class="text-center py-10 text-gray-400 text-xs">
+            <div id="simEmptyNotice" class="text-center py-12 text-slate-400 text-xs">
+              <i class="fa-solid fa-flask text-2xl text-slate-300 block mb-2"></i>
               Click "Execute Reply &amp; Classification Test" to inspect decisions.
             </div>
 
             <div id="simResultsContent" class="space-y-3 hidden">
               <div class="grid grid-cols-2 gap-3">
-                <div class="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <span class="text-gray-500 block text-[11px]">Reply Category:</span>
-                  <span id="simCategory" class="font-bold text-gray-900 text-xs"></span>
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <span class="text-slate-500 block text-[11px] font-medium">Reply Category:</span>
+                  <span id="simCategory" class="font-bold text-slate-900 text-xs"></span>
                 </div>
-                <div class="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <span class="text-gray-500 block text-[11px]">SLA Response Target:</span>
-                  <span id="simSla" class="font-bold text-emerald-700 text-xs"></span>
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <span class="text-slate-500 block text-[11px] font-medium">SLA Response Target:</span>
+                  <span id="simSla" class="font-bold text-slate-900 text-xs"></span>
                 </div>
               </div>
 
-              <div class="p-3 bg-gray-50 rounded-md border border-gray-200 space-y-1">
-                <span class="text-gray-500 block text-[11px]">Guardrail Keyword Scan:</span>
-                <div id="simKeywords" class="font-mono text-gray-800 font-semibold"></div>
+              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                <span class="text-slate-500 block text-[11px] font-medium">Guardrail Keyword Scan:</span>
+                <div id="simKeywords" class="font-mono text-slate-900 font-semibold"></div>
               </div>
 
-              <div class="p-3 bg-gray-50 rounded-md border border-gray-200 space-y-1">
-                <span class="text-gray-500 block text-[11px]">Approved Holding Reply (If dispatched):</span>
-                <p id="simHoldingReply" class="text-gray-700 italic"></p>
+              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                <span class="text-slate-500 block text-[11px] font-medium">Approved Holding Reply (If dispatched):</span>
+                <p id="simHoldingReply" class="text-slate-800 italic"></p>
               </div>
 
               <div class="space-y-1">
-                <span class="text-gray-500 block text-[11px] font-semibold">Odoo Handover Pack Description (Generated for Sales):</span>
-                <pre id="simHandoverPackPreview" class="p-3 bg-gray-900 text-gray-100 rounded-md text-[11px] max-h-40 overflow-y-auto whitespace-pre-wrap font-mono"></pre>
+                <span class="text-slate-500 block text-[11px] font-semibold">Odoo Handover Pack Description (Generated for Sales):</span>
+                <pre id="simHandoverPackPreview" class="p-3 bg-slate-900 text-slate-100 rounded-lg text-[11px] max-h-40 overflow-y-auto whitespace-pre-wrap font-mono"></pre>
               </div>
             </div>
           </div>
@@ -555,97 +685,97 @@ Transport Manager</textarea>
 
       <!-- ================= TAB: AUTOMATION SETTINGS ================= -->
       <section id="tab-automation" class="space-y-6 hidden">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900 tracking-tight">Automation Settings</h2>
-          <p class="text-xs text-gray-500">Configure outbound automation schedules, dispatch rules, retry logic, and campaign cadence parameters.</p>
+        <div class="border-b border-slate-200/80 pb-4">
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Automation Settings</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Configure outbound automation schedules, dispatch rules, retry logic, and campaign cadence parameters.</p>
         </div>
 
-        <!-- Live Dispatch Worker & Queue Monitor Card -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-gray-100 gap-3">
+        <!-- Live Dispatch Worker & Queue Monitor Card (Clean Neutral) -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
             <div>
               <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Scheduled Queue Worker (node-cron)</h3>
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-600 animate-pulse"></span>
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Scheduled Queue Worker (node-cron)</h3>
               </div>
-              <p class="text-[11px] text-gray-500 mt-0.5">Automated batch dispatch runner evaluating approved windows, daily caps, and retry cadence.</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Automated batch dispatch runner evaluating approved windows, daily caps, and retry cadence.</p>
             </div>
 
             <div class="flex items-center gap-2">
-              <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200">
-                <input type="checkbox" id="chkForceWindow" class="rounded border-gray-300 text-slate-900 focus:ring-0">
-                <span class="text-[11px]">Bypass Window for Test</span>
+              <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-700 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                <input type="checkbox" id="chkForceWindow" class="rounded border-slate-300 text-slate-900 focus:ring-0">
+                <span class="text-[11px] font-medium">Bypass Window for Test</span>
               </label>
 
-              <button type="button" onclick="triggerBatchNow()" id="btnTriggerBatch" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded transition shadow-sm flex items-center gap-1.5">
-                <i class="fa-solid fa-bolt text-xs"></i>
+              <button type="button" onclick="triggerBatchNow()" id="btnTriggerBatch" class="btn-press px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt text-xs text-slate-300"></i>
                 <span>Trigger Batch Run Now</span>
               </button>
             </div>
           </div>
 
-          <!-- 4 Worker Status Badges -->
+          <!-- 4 Worker Status Badges (Zero green highlights, clean unified text) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <div class="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-1">
-              <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Window Status</span>
-              <div id="workerWindowBadge" class="flex items-center gap-1.5 font-bold text-gray-900">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Window Status</span>
+              <div id="workerWindowBadge" class="flex items-center gap-1.5 font-bold text-slate-900">
+                <span class="w-2 h-2 rounded-full bg-slate-600"></span>
                 <span id="workerWindowText">Checking...</span>
               </div>
-              <p id="workerWindowDetail" class="text-[11px] text-gray-400">Loading timezone time...</p>
+              <p id="workerWindowDetail" class="text-[11px] text-slate-500">Loading timezone time...</p>
             </div>
 
-            <div class="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-1">
-              <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Today's Sent Cap</span>
-              <div class="flex items-baseline gap-1.5 font-bold text-gray-900">
-                <span id="workerSentToday" class="text-base text-gray-900">0</span>
-                <span class="text-xs text-gray-500">/ <span id="workerDailyCap">50</span> Max</span>
+            <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Today's Sent Cap</span>
+              <div class="flex items-baseline gap-1.5 font-bold text-slate-900">
+                <span id="workerSentToday" class="text-lg text-slate-900">0</span>
+                <span class="text-xs text-slate-500">/ <span id="workerDailyCap">50</span> Max</span>
               </div>
-              <p id="workerRemainingCapacity" class="text-[11px] text-emerald-600 font-medium">50 sends remaining today</p>
+              <p id="workerRemainingCapacity" class="text-[11px] text-slate-600 font-medium">50 sends remaining today</p>
             </div>
 
-            <div class="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-1">
-              <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Queue Backlog</span>
-              <div class="flex items-baseline gap-1.5 font-bold text-gray-900">
-                <span id="workerPendingCount" class="text-base text-blue-700">0</span>
-                <span class="text-xs text-gray-500">Pending</span>
+            <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Queue Backlog</span>
+              <div class="flex items-baseline gap-1.5 font-bold text-slate-900">
+                <span id="workerPendingCount" class="text-lg text-slate-900">0</span>
+                <span class="text-xs text-slate-500">Pending</span>
               </div>
-              <p id="workerRetryingCount" class="text-[11px] text-amber-600 font-medium">0 retrying due to backoff</p>
+              <p id="workerRetryingCount" class="text-[11px] text-slate-600 font-medium">0 retrying due to backoff</p>
             </div>
 
-            <div class="p-3 bg-gray-50 border border-gray-200 rounded-md space-y-1">
-              <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Runner Cadence</span>
-              <div class="flex items-baseline gap-1.5 font-bold text-gray-900">
-                <span id="workerCadenceInterval" class="text-base text-gray-900">Every 15m</span>
+            <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Runner Cadence</span>
+              <div class="flex items-baseline gap-1.5 font-bold text-slate-900">
+                <span id="workerCadenceInterval" class="text-lg text-slate-900">Every 15m</span>
               </div>
-              <p class="text-[11px] text-gray-400">Automated node-cron scheduler</p>
+              <p class="text-[11px] text-slate-500">Automated node-cron scheduler</p>
             </div>
           </div>
 
           <!-- Alert / Batch Run Output Notification -->
-          <div id="workerBatchAlert" class="hidden p-3 rounded-md text-xs font-medium border flex items-center justify-between">
+          <div id="workerBatchAlert" class="hidden p-3.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 text-slate-900 flex items-center justify-between">
             <span id="workerBatchAlertText"></span>
-            <button type="button" onclick="this.parentElement.classList.add('hidden')" class="text-gray-400 hover:text-gray-600 ml-2">&times;</button>
+            <button type="button" onclick="this.parentElement.classList.add('hidden')" class="text-slate-400 hover:text-slate-600 ml-2">&times;</button>
           </div>
         </div>
 
         <!-- Dispatch Schedule -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm">
-          <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-            <i class="fa-regular fa-clock text-gray-500"></i> Dispatch Schedule
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card">
+          <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-regular fa-clock text-slate-400"></i> Dispatch Schedule
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Sending Window Start</label>
-              <input id="autoSendStart" type="time" value="08:00" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <label class="block text-slate-500 font-medium">Sending Window Start</label>
+              <input id="autoSendStart" type="time" value="08:00" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
             </div>
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Sending Window End</label>
-              <input id="autoSendEnd" type="time" value="18:00" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <label class="block text-slate-500 font-medium">Sending Window End</label>
+              <input id="autoSendEnd" type="time" value="18:00" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
             </div>
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Timezone</label>
-              <select id="autoTimezone" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <label class="block text-slate-500 font-medium">Timezone</label>
+              <select id="autoTimezone" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
                 <option value="Asia/Dubai">Asia/Dubai (GST, UTC+4)</option>
                 <option value="Asia/Riyadh">Asia/Riyadh (AST, UTC+3)</option>
                 <option value="Africa/Nairobi">Africa/Nairobi (EAT, UTC+3)</option>
@@ -656,66 +786,66 @@ Transport Manager</textarea>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Send Days</label>
+              <label class="block text-slate-500 font-medium">Send Days</label>
               <div class="flex flex-wrap gap-2 pt-1">
-                <label class="flex items-center space-x-1.5 cursor-pointer"><input type="checkbox" name="autoDay" value="Mon" checked class="rounded border-gray-300 text-slate-900 focus:ring-0"><span>Mon</span></label>
-                <label class="flex items-center space-x-1.5 cursor-pointer"><input type="checkbox" name="autoDay" value="Tue" checked class="rounded border-gray-300 text-slate-900 focus:ring-0"><span>Tue</span></label>
-                <label class="flex items-center space-x-1.5 cursor-pointer"><input type="checkbox" name="autoDay" value="Wed" checked class="rounded border-gray-300 text-slate-900 focus:ring-0"><span>Wed</span></label>
-                <label class="flex items-center space-x-1.5 cursor-pointer"><input type="checkbox" name="autoDay" value="Thu" checked class="rounded border-gray-300 text-slate-900 focus:ring-0"><span>Thu</span></label>
-                <label class="flex items-center space-x-1.5 cursor-pointer"><input type="checkbox" name="autoDay" value="Fri" checked class="rounded border-gray-300 text-slate-900 focus:ring-0"><span>Fri</span></label>
-                <label class="flex items-center space-x-1.5 cursor-pointer"><input type="checkbox" name="autoDay" value="Sat" class="rounded border-gray-300 text-slate-900 focus:ring-0"><span>Sat</span></label>
-                <label class="flex items-center space-x-1.5 cursor-pointer"><input type="checkbox" name="autoDay" value="Sun" class="rounded border-gray-300 text-slate-900 focus:ring-0"><span>Sun</span></label>
+                <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900"><input type="checkbox" name="autoDay" value="Mon" checked class="rounded border-slate-300 text-slate-900 focus:ring-0"><span>Mon</span></label>
+                <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900"><input type="checkbox" name="autoDay" value="Tue" checked class="rounded border-slate-300 text-slate-900 focus:ring-0"><span>Tue</span></label>
+                <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900"><input type="checkbox" name="autoDay" value="Wed" checked class="rounded border-slate-300 text-slate-900 focus:ring-0"><span>Wed</span></label>
+                <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900"><input type="checkbox" name="autoDay" value="Thu" checked class="rounded border-slate-300 text-slate-900 focus:ring-0"><span>Thu</span></label>
+                <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900"><input type="checkbox" name="autoDay" value="Fri" checked class="rounded border-slate-300 text-slate-900 focus:ring-0"><span>Fri</span></label>
+                <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900"><input type="checkbox" name="autoDay" value="Sat" class="rounded border-slate-300 text-slate-900 focus:ring-0"><span>Sat</span></label>
+                <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900"><input type="checkbox" name="autoDay" value="Sun" class="rounded border-slate-300 text-slate-900 focus:ring-0"><span>Sun</span></label>
               </div>
             </div>
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Max Emails Per Day</label>
-              <input id="autoMaxPerDay" type="number" value="50" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
-              <span class="text-[11px] text-gray-400">Smartlead daily cap per sending account</span>
+              <label class="block text-slate-500 font-medium">Max Emails Per Day</label>
+              <input id="autoMaxPerDay" type="number" value="50" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
+              <span class="text-[11px] text-slate-400">Smartlead daily cap per sending account</span>
             </div>
           </div>
         </div>
 
         <!-- Campaign Cadence -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm">
-          <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-            <i class="fa-solid fa-arrows-spin text-gray-500"></i> Campaign Cadence &amp; Follow-up
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card">
+          <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-arrows-spin text-slate-400"></i> Campaign Cadence &amp; Follow-up
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Follow-up Delay (Days)</label>
-              <input id="autoFollowupDelay" type="number" value="3" min="1" max="30" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
-              <span class="text-[11px] text-gray-400">Days between sequence steps</span>
+              <label class="block text-slate-500 font-medium">Follow-up Delay (Days)</label>
+              <input id="autoFollowupDelay" type="number" value="3" min="1" max="30" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
+              <span class="text-[11px] text-slate-400">Days between sequence steps</span>
             </div>
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Max Sequence Steps</label>
-              <input id="autoMaxSteps" type="number" value="4" min="1" max="10" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
-              <span class="text-[11px] text-gray-400">Total touches before auto-closing lead</span>
+              <label class="block text-slate-500 font-medium">Max Sequence Steps</label>
+              <input id="autoMaxSteps" type="number" value="4" min="1" max="10" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
+              <span class="text-[11px] text-slate-400">Total touches before auto-closing lead</span>
             </div>
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Batch Interval (Minutes)</label>
-              <input id="autoBatchInterval" type="number" value="15" min="5" max="120" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
-              <span class="text-[11px] text-gray-400">Time between processing batches</span>
+              <label class="block text-slate-500 font-medium">Batch Interval (Minutes)</label>
+              <input id="autoBatchInterval" type="number" value="15" min="5" max="120" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
+              <span class="text-[11px] text-slate-400">Time between processing batches</span>
             </div>
           </div>
         </div>
 
         <!-- Retry & Error Handling -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm">
-          <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-            <i class="fa-solid fa-rotate text-gray-500"></i> Retry &amp; Error Handling
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card">
+          <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-rotate text-slate-400"></i> Retry &amp; Error Handling
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Max Retries on Failure</label>
-              <input id="autoMaxRetries" type="number" value="3" min="0" max="10" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <label class="block text-slate-500 font-medium">Max Retries on Failure</label>
+              <input id="autoMaxRetries" type="number" value="3" min="0" max="10" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
             </div>
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Retry Backoff (Seconds)</label>
-              <input id="autoRetryBackoff" type="number" value="60" min="10" max="600" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <label class="block text-slate-500 font-medium">Retry Backoff (Seconds)</label>
+              <input id="autoRetryBackoff" type="number" value="60" min="10" max="600" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
             </div>
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">On Bounce Action</label>
-              <select id="autoOnBounce" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <label class="block text-slate-500 font-medium">On Bounce Action</label>
+              <select id="autoOnBounce" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
                 <option value="suppress">Suppress Contact Immediately</option>
                 <option value="retry_once">Retry Once, Then Suppress</option>
                 <option value="flag">Flag for Manual Review</option>
@@ -725,32 +855,32 @@ Transport Manager</textarea>
         </div>
 
         <!-- Auto-Classification Thresholds -->
-        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4 shadow-sm">
-          <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-            <i class="fa-solid fa-sliders text-gray-500"></i> Auto-Classification Thresholds
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-4 shadow-card">
+          <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-slate-400"></i> Auto-Classification Thresholds
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">AI Confidence Threshold for Auto-Dispatch (%)</label>
-              <input id="autoConfidenceThreshold" type="number" value="85" min="50" max="100" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
-              <span class="text-[11px] text-gray-400">Below this threshold, replies queue for human review</span>
+              <label class="block text-slate-500 font-medium">AI Confidence Threshold for Auto-Dispatch (%)</label>
+              <input id="autoConfidenceThreshold" type="number" value="85" min="50" max="100" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
+              <span class="text-[11px] text-slate-400">Below this threshold, replies queue for human review</span>
             </div>
             <div class="space-y-1.5">
-              <label class="block text-gray-500 font-medium">Pre-Dispatch QA Mode</label>
-              <select id="autoQaMode" class="w-full bg-gray-50 border border-gray-200 rounded-md p-2 text-xs text-gray-800 focus:bg-white focus:border-gray-400 focus:outline-none">
+              <label class="block text-slate-500 font-medium">Pre-Dispatch QA Mode</label>
+              <select id="autoQaMode" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-900 focus:bg-white focus:outline-none transition">
                 <option value="full_review">Month 1: 100% Human Review Before Dispatch</option>
                 <option value="sample_review">Month 2+: 20% Sample Review</option>
                 <option value="auto">Autonomous: AI Dispatches with Confidence Gate</option>
               </select>
-              <span class="text-[11px] text-gray-400">Controls how much human oversight is applied</span>
+              <span class="text-[11px] text-slate-400">Controls how much human oversight is applied</span>
             </div>
           </div>
         </div>
 
         <!-- Save Button -->
         <div class="flex items-center justify-end gap-3">
-          <span id="autoSaveStatus" class="text-xs text-gray-400 hidden">Settings saved successfully.</span>
-          <button onclick="saveAutomationSettings()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-md transition shadow-sm flex items-center gap-2">
+          <span id="autoSaveStatus" class="text-xs text-slate-500 hidden">Settings saved successfully.</span>
+          <button onclick="saveAutomationSettings()" class="btn-press px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition shadow-sm flex items-center gap-2 cursor-pointer">
             <i class="fa-solid fa-floppy-disk text-xs"></i>
             <span>Save Automation Settings</span>
           </button>
@@ -759,27 +889,27 @@ Transport Manager</textarea>
 
       <!-- ================= TAB 5: ODOO HANDOVERS ================= -->
       <section id="tab-handovers" class="space-y-6 hidden">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900 tracking-tight">Odoo CRM Handover Inspection</h2>
-          <p class="text-xs text-gray-500">All warm leads and high-priority replies synchronized to Odoo CRM for sales reps.</p>
+        <div class="border-b border-slate-200/80 pb-4">
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Odoo CRM Handover Inspection</h2>
+          <p class="text-xs text-slate-500 mt-0.5">All warm leads and high-priority replies synchronized to Odoo CRM for sales reps.</p>
         </div>
 
-        <div class="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
-          <div class="overflow-x-auto">
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-card">
+          <div class="overflow-x-auto border border-slate-200 rounded-lg">
             <table class="w-full text-left text-xs">
-              <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider text-[11px] border-b border-gray-200">
+              <thead class="bg-slate-50 text-slate-700 uppercase tracking-wider text-[11px] border-b border-slate-200">
                 <tr>
-                  <th class="p-3">Odoo Lead ID</th>
-                  <th class="p-3">Company</th>
-                  <th class="p-3">Contact</th>
-                  <th class="p-3">Priority</th>
-                  <th class="p-3">Status</th>
-                  <th class="p-3">Handover Time</th>
+                  <th class="p-3 font-bold">Odoo Lead ID</th>
+                  <th class="p-3 font-bold">Company</th>
+                  <th class="p-3 font-bold">Contact</th>
+                  <th class="p-3 font-bold">Priority</th>
+                  <th class="p-3 font-bold">Status</th>
+                  <th class="p-3 font-bold">Handover Time</th>
                 </tr>
               </thead>
-              <tbody id="handoversTbody" class="divide-y divide-gray-100">
+              <tbody id="handoversTbody" class="divide-y divide-slate-100 bg-white">
                 <tr>
-                  <td colspan="6" class="p-6 text-center text-gray-400">No leads handed over yet in this session.</td>
+                  <td colspan="6" class="p-8 text-center text-slate-400">No leads handed over yet in this session.</td>
                 </tr>
               </tbody>
             </table>
@@ -789,49 +919,49 @@ Transport Manager</textarea>
 
       <!-- ================= TAB 6: COMPLIANCE MATRIX ================= -->
       <section id="tab-compliance" class="space-y-6 hidden">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900 tracking-tight">Compliance Router &amp; Policy Matrix</h2>
-          <p class="text-xs text-gray-500">Deterministic jurisdiction rules, channel allowances, and keyword triggers.</p>
+        <div class="border-b border-slate-200/80 pb-4">
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Compliance Router &amp; Policy Matrix</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Deterministic jurisdiction rules, channel allowances, and keyword triggers.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-          <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-3 shadow-sm">
-            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-              <i class="fa-solid fa-key text-gray-500"></i> Mandatory Escalation Keywords (Sheet AI Guardrails)
+          <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-3 shadow-card">
+            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-key text-slate-400"></i> Mandatory Escalation Keywords (Sheet AI Guardrails)
             </h3>
-            <p class="text-xs text-gray-500">Hitting any of these triggers immediate human escalation and bypasses AI response generation:</p>
+            <p class="text-xs text-slate-500">Hitting any of these triggers immediate human escalation and bypasses AI response generation:</p>
             <div class="flex flex-wrap gap-1.5 pt-1">
-              <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-rose-700 rounded text-xs font-mono font-semibold">price</span>
-              <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-rose-700 rounded text-xs font-mono font-semibold">pricing</span>
-              <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-rose-700 rounded text-xs font-mono font-semibold">quote</span>
-              <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-rose-700 rounded text-xs font-mono font-semibold">contract</span>
-              <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-rose-700 rounded text-xs font-mono font-semibold">legal</span>
-              <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-rose-700 rounded text-xs font-mono font-semibold">gdpr</span>
-              <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-rose-700 rounded text-xs font-mono font-semibold">complaint</span>
-              <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-rose-700 rounded text-xs font-mono font-semibold">lawyer</span>
+              <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-900 rounded-md text-xs font-mono font-semibold">price</span>
+              <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-900 rounded-md text-xs font-mono font-semibold">pricing</span>
+              <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-900 rounded-md text-xs font-mono font-semibold">quote</span>
+              <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-900 rounded-md text-xs font-mono font-semibold">contract</span>
+              <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-900 rounded-md text-xs font-mono font-semibold">legal</span>
+              <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-900 rounded-md text-xs font-mono font-semibold">gdpr</span>
+              <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-900 rounded-md text-xs font-mono font-semibold">complaint</span>
+              <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-900 rounded-md text-xs font-mono font-semibold">lawyer</span>
             </div>
           </div>
 
-          <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-3 shadow-sm">
-            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-              <i class="fa-solid fa-earth-americas text-gray-500"></i> Market Channel Permissions
+          <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-3 shadow-card">
+            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-earth-americas text-slate-400"></i> Market Channel Permissions
             </h3>
-            <div class="text-xs space-y-2 text-gray-700">
-              <div class="flex justify-between border-b border-gray-100 pb-1.5">
+            <div class="text-xs space-y-2 text-slate-800">
+              <div class="flex justify-between border-b border-slate-100 pb-2">
                 <span>UAE / Saudi Arabia / Kenya / Egypt:</span>
-                <span class="text-emerald-700 font-semibold">Email &amp; LinkedIn Allowed</span>
+                <span class="font-semibold text-slate-900">Email &amp; LinkedIn Allowed</span>
               </div>
-              <div class="flex justify-between border-b border-gray-100 pb-1.5">
+              <div class="flex justify-between border-b border-slate-100 pb-2">
                 <span>Germany (DE):</span>
-                <span class="text-amber-700 font-semibold">LinkedIn Only (Cold Email Blocked: UWG §7)</span>
+                <span class="font-semibold text-slate-900">LinkedIn Only (Cold Email Blocked: UWG §7)</span>
               </div>
-              <div class="flex justify-between border-b border-gray-100 pb-1.5">
+              <div class="flex justify-between border-b border-slate-100 pb-2">
                 <span>United Kingdom / France:</span>
-                <span class="text-emerald-700 font-semibold">B2B Email Allowed (Legitimate Interest)</span>
+                <span class="font-semibold text-slate-900">B2B Email Allowed (Legitimate Interest)</span>
               </div>
-              <div class="flex justify-between">
+              <div class="flex justify-between pt-0.5">
                 <span>WhatsApp Outreach:</span>
-                <span class="text-rose-700 font-semibold">Strict Prior Opt-in Only</span>
+                <span class="font-semibold text-slate-900">Strict Prior Opt-in Only</span>
               </div>
             </div>
           </div>
@@ -840,120 +970,123 @@ Transport Manager</textarea>
 
       <!-- ================= TAB 8: WHATSAPP AI LIVE ================= -->
       <section id="tab-whatsapp" class="space-y-6 hidden">
-        <div>
+        <div class="border-b border-slate-200/80 pb-4">
           <div class="flex items-center gap-2">
-            <h2 class="text-xl font-bold text-gray-900 tracking-tight">Odoo Native WhatsApp AI Assistant</h2>
-            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 uppercase tracking-wide">24h Meta Window Active</span>
+            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Odoo Native WhatsApp AI Assistant</h2>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800 uppercase tracking-wider border border-slate-200">24h Meta Window Active</span>
           </div>
-          <p class="text-xs text-gray-500">Automated inbound responses for prospect-initiated WhatsApp chats via Odoo's native Discuss channel. Strictly enforces non-price quoting guardrails and 6-part Odoo CRM lead handover.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Automated inbound responses for prospect-initiated WhatsApp chats via Odoo's native Discuss channel. Strictly enforces non-price quoting guardrails and 6-part Odoo CRM lead handover.</p>
         </div>
 
-        <!-- WhatsApp Policy Banner -->
-        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-xs text-emerald-900 space-y-2">
-          <div class="font-bold flex items-center gap-2">
-            <i class="fa-brands fa-whatsapp text-emerald-600 text-base"></i>
-            <span>Meta WhatsApp Business &amp; Odoo Handover Policy</span>
+        <!-- WhatsApp Policy Banner (Clean Neutral White/Slate Card) -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 space-y-3 shadow-card">
+          <div class="font-bold flex items-center gap-2 text-slate-900">
+            <i class="fa-brands fa-whatsapp text-slate-700 text-lg"></i>
+            <span class="text-sm font-extrabold text-slate-900">Meta WhatsApp Business &amp; Odoo Handover Policy</span>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-emerald-800 text-[11px] pt-1">
-            <div class="bg-white/80 p-2.5 rounded border border-emerald-100">
-              <span class="font-bold block text-emerald-900">1. Inbound Only (Strict Opt-In)</span>
-              We never initiate cold WhatsApp messages. We only respond to prospect-initiated chats routed from Odoo.
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] pt-1">
+            <div class="bg-slate-50/80 p-3 rounded-lg border border-slate-200 shadow-xs">
+              <span class="font-bold block text-slate-900 mb-0.5">1. Inbound Only (Strict Opt-In)</span>
+              <p class="text-slate-600 leading-relaxed">We never initiate cold WhatsApp messages. We only respond to prospect-initiated chats routed from Odoo.</p>
             </div>
-            <div class="bg-white/80 p-2.5 rounded border border-emerald-100">
-              <span class="font-bold block text-emerald-900">2. Same 7 Guardrails Enforced</span>
-              The AI never quotes pricing or negotiates terms on WhatsApp. Holding replies are sent and sales is notified.
+            <div class="bg-slate-50/80 p-3 rounded-lg border border-slate-200 shadow-xs">
+              <span class="font-bold block text-slate-900 mb-0.5">2. Same 7 Guardrails Enforced</span>
+              <p class="text-slate-600 leading-relaxed">The AI never quotes pricing or negotiates terms on WhatsApp. Holding replies are sent and sales is notified.</p>
             </div>
-            <div class="bg-white/80 p-2.5 rounded border border-emerald-100">
-              <span class="font-bold block text-emerald-900">3. Email Outbound Auto-Suppression</span>
-              Active WhatsApp chats pause automated email follow-ups to avoid awkward double-contacting.
+            <div class="bg-slate-50/80 p-3 rounded-lg border border-slate-200 shadow-xs">
+              <span class="font-bold block text-slate-900 mb-0.5">3. Email Outbound Auto-Suppression</span>
+              <p class="text-slate-600 leading-relaxed">Active WhatsApp chats pause automated email follow-ups to avoid awkward double-contacting.</p>
             </div>
           </div>
         </div>
 
         <!-- Simulator & Live Feed Split -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- WhatsApp Interactive Simulator -->
-          <div class="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-4">
-            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div class="font-bold text-xs uppercase tracking-wider text-gray-600">Simulate WhatsApp Message</div>
-              <i class="fa-solid fa-mobile-screen text-gray-400"></i>
+          <!-- WhatsApp Interactive Simulator (Clean Neutral) -->
+          <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-card space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-mobile-screen text-slate-400"></i>
+                <span>Simulate WhatsApp Message</span>
+              </div>
+              <span class="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
             </div>
 
             <div class="space-y-3 text-xs">
               <div>
-                <label class="block font-semibold text-gray-700 mb-1">Prospect Name</label>
-                <input id="wa-sim-name" type="text" class="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none" value="Ahmed Al-Mansoor">
+                <label class="block font-semibold text-slate-700 mb-1">Prospect Name</label>
+                <input id="wa-sim-name" type="text" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-slate-900 focus:bg-white focus:outline-none transition" value="Ahmed Al-Mansoor">
               </div>
 
               <div>
-                <label class="block font-semibold text-gray-700 mb-1">Phone Number (E.164)</label>
-                <input id="wa-sim-phone" type="text" class="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none" value="+971501234567">
+                <label class="block font-semibold text-slate-700 mb-1">Phone Number (E.164)</label>
+                <input id="wa-sim-phone" type="text" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-slate-900 focus:bg-white focus:outline-none transition" value="+971501234567">
               </div>
 
               <div>
-                <label class="block font-semibold text-gray-700 mb-1">Linked Email (Optional)</label>
-                <input id="wa-sim-email" type="email" class="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none" placeholder="ahmed@fleet.ae">
+                <label class="block font-semibold text-slate-700 mb-1">Linked Email (Optional)</label>
+                <input id="wa-sim-email" type="email" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-slate-900 focus:bg-white focus:outline-none transition" placeholder="ahmed@fleet.ae">
               </div>
 
               <div>
-                <label class="block font-semibold text-gray-700 mb-1">Inbound WhatsApp Message</label>
-                <textarea id="wa-sim-body" rows="3" class="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:border-emerald-500 focus:outline-none" placeholder="Type WhatsApp message here...">Hello, we run 45 logistics trucks in Dubai and want a quote for your Push-to-Talk devices.</textarea>
+                <label class="block font-semibold text-slate-700 mb-1">Inbound WhatsApp Message</label>
+                <textarea id="wa-sim-body" rows="3" class="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-slate-900 focus:bg-white focus:outline-none transition" placeholder="Type WhatsApp message here...">Hello, we run 45 logistics trucks in Dubai and want a quote for your Push-to-Talk devices.</textarea>
               </div>
 
-              <div class="flex gap-2 pt-1">
-                <button onclick="setWaPrompt('pricing')" class="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-[11px] text-gray-700 font-medium">Pricing Guardrail</button>
-                <button onclick="setWaPrompt('demo')" class="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-[11px] text-gray-700 font-medium">Demo Request</button>
-                <button onclick="setWaPrompt('legal')" class="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-[11px] text-gray-700 font-medium">GDPR / Legal</button>
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                <button onclick="setWaPrompt('pricing')" class="btn-press px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-[11px] text-slate-800 font-medium">Pricing Guardrail</button>
+                <button onclick="setWaPrompt('demo')" class="btn-press px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-[11px] text-slate-800 font-medium">Demo Request</button>
+                <button onclick="setWaPrompt('legal')" class="btn-press px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-[11px] text-slate-800 font-medium">GDPR / Legal</button>
               </div>
 
-              <button onclick="sendSimulatedWhatsApp()" id="wa-sim-btn" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
-                <i class="fa-solid fa-paper-plane"></i>
+              <button onclick="sendSimulatedWhatsApp()" id="wa-sim-btn" class="btn-press w-full mt-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
                 <span>Send Inbound to AI</span>
               </button>
             </div>
 
-            <!-- Simulation Result Card -->
-            <div id="wa-sim-result" class="hidden border border-emerald-200 bg-emerald-50/50 rounded-lg p-3 text-xs space-y-2">
-              <div class="font-bold text-emerald-900 flex items-center justify-between">
+            <!-- Simulation Result Card (Clean Neutral) -->
+            <div id="wa-sim-result" class="hidden border border-slate-200 bg-slate-50 rounded-xl p-3.5 text-xs space-y-2.5 shadow-xs">
+              <div class="font-bold text-slate-900 flex items-center justify-between">
                 <span>AI Processing Outcome</span>
-                <span id="wa-res-type" class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-200 text-emerald-800"></span>
+                <span id="wa-res-type" class="px-2 py-0.5 rounded text-[10px] bg-slate-200 text-slate-800 font-bold"></span>
               </div>
-              <div class="text-[11px] text-gray-700 space-y-1">
-                <div><span class="font-semibold text-gray-900">Reply Sent:</span> <span id="wa-res-reply" class="text-emerald-800 font-medium italic"></span></div>
-                <div><span class="font-semibold text-gray-900">CRM Handover:</span> <span id="wa-res-crm" class="font-semibold"></span></div>
-                <div><span class="font-semibold text-gray-900">Email Sequence:</span> <span class="text-amber-700 font-semibold">Paused (WhatsApp Active)</span></div>
+              <div class="text-[11px] text-slate-800 space-y-1.5">
+                <div><span class="font-semibold text-slate-900">Reply Sent:</span> <span id="wa-res-reply" class="font-medium italic text-slate-800"></span></div>
+                <div><span class="font-semibold text-slate-900">CRM Handover:</span> <span id="wa-res-crm" class="font-semibold text-slate-900"></span></div>
+                <div><span class="font-semibold text-slate-900">Email Sequence:</span> <span class="font-semibold text-slate-800">Paused (WhatsApp Active)</span></div>
               </div>
             </div>
           </div>
 
-          <!-- Live WhatsApp Inbound Feed -->
-          <div class="lg:col-span-2 bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col">
-            <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+          <!-- Live WhatsApp Inbound Feed (Clean Neutral) -->
+          <div class="lg:col-span-2 bg-white border border-slate-200/90 rounded-xl shadow-card flex flex-col">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 class="font-bold text-xs uppercase tracking-wider text-gray-700">Recent WhatsApp Inbound Conversations</h3>
-                <p class="text-[11px] text-gray-500">Live conversation log processed through Odoo Discuss webhook</p>
+                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-700">Recent WhatsApp Inbound Conversations</h3>
+                <p class="text-[11px] text-slate-500">Live conversation log processed through Odoo Discuss webhook</p>
               </div>
-              <button onclick="loadWhatsAppConversations()" class="px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 rounded bg-gray-50 hover:bg-gray-100 flex items-center gap-1">
-                <i class="fa-solid fa-rotate-right"></i>
-                <span>Refresh</span>
+              <button onclick="loadWhatsAppConversations()" class="btn-press px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg bg-slate-50 hover:bg-slate-100 flex items-center gap-1.5 shadow-xs">
+                <i class="fa-solid fa-rotate-right text-xs text-slate-400"></i>
+                <span>Refresh Feed</span>
               </button>
             </div>
 
             <div class="flex-1 overflow-x-auto p-4">
               <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr class="border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                    <th class="pb-2">Prospect</th>
-                    <th class="pb-2">Message</th>
-                    <th class="pb-2">AI Classification</th>
-                    <th class="pb-2">Reply Sent</th>
-                    <th class="pb-2">Meta 24h Window</th>
-                    <th class="pb-2">Odoo CRM</th>
+                  <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th class="pb-2.5 font-bold">Prospect</th>
+                    <th class="pb-2.5 font-bold">Message</th>
+                    <th class="pb-2.5 font-bold">AI Classification</th>
+                    <th class="pb-2.5 font-bold">Reply Sent</th>
+                    <th class="pb-2.5 font-bold">Meta 24h Window</th>
+                    <th class="pb-2.5 font-bold">Odoo CRM</th>
                   </tr>
                 </thead>
-                <tbody id="wa-conversations-tbody" class="divide-y divide-gray-100 text-gray-700">
+                <tbody id="wa-conversations-tbody" class="divide-y divide-slate-100 text-slate-800">
                   <tr>
-                    <td colspan="6" class="py-6 text-center text-gray-400 italic">No WhatsApp conversations recorded yet. Use the simulator or send a webhook to test.</td>
+                    <td colspan="6" class="py-10 text-center text-slate-400 italic">No WhatsApp conversations recorded yet. Use the simulator or send a webhook to test.</td>
                   </tr>
                 </tbody>
               </table>
@@ -965,23 +1098,65 @@ Transport Manager</textarea>
     </main>
   </div>
 
-  <!-- Client-side Logic Script -->
+  <!-- ================= FLOATING TOAST CONTAINER ================= -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 max-w-sm pointer-events-none"></div>
+
+  <!-- ================= CLIENT-SIDE LOGIC SCRIPT ================= -->
   <script>
     let isKillSwitch = false;
 
+    // Toast Notification System (Monochrome Slate Aesthetic)
+    function showToast(message, type = 'info', title = null) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = 'toast-animate-in pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-white/95 text-slate-900 shadow-lg backdrop-blur-md transition-all text-xs';
+
+      const icon = '<i class="fa-solid fa-circle-info text-slate-600 text-sm mt-0.5"></i>';
+
+      toast.innerHTML = \`
+        \${icon}
+        <div class="flex-1">
+          \${title ? \`<div class="font-bold text-xs text-slate-900 mb-0.5">\${title}</div>\` : ''}
+          <div class="text-[11px] text-slate-700 leading-relaxed">\${message}</div>
+        </div>
+        <button type="button" class="text-slate-400 hover:text-slate-600 ml-1 text-sm font-bold leading-none cursor-pointer" onclick="this.parentElement.remove()">&times;</button>
+      \`;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px) scale(0.95)';
+        setTimeout(() => toast.remove(), 250);
+      }, 4500);
+    }
+
     function switchTab(tabId) {
       document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
-      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      const activeSec = document.getElementById('tab-' + tabId);
+      if (activeSec) activeSec.classList.remove('hidden');
 
       document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('text-gray-900', 'bg-gray-100', 'border-gray-200');
-        btn.classList.add('text-gray-600');
+        btn.classList.remove('text-slate-900', 'bg-slate-100/90', 'border-slate-200/80', 'shadow-xs');
+        btn.classList.add('text-slate-600');
+        const icon = btn.querySelector('i');
+        if (icon) {
+          icon.classList.remove('text-slate-700');
+          icon.classList.add('text-slate-400');
+        }
       });
 
       const activeBtn = document.getElementById('nav-' + tabId);
       if (activeBtn) {
-        activeBtn.classList.remove('text-gray-600');
-        activeBtn.classList.add('text-gray-900', 'bg-gray-100', 'border-gray-200');
+        activeBtn.classList.remove('text-slate-600');
+        activeBtn.classList.add('text-slate-900', 'bg-slate-100/90', 'border-slate-200/80', 'shadow-xs');
+        const icon = activeBtn.querySelector('i');
+        if (icon) {
+          icon.classList.remove('text-slate-400');
+          icon.classList.add('text-slate-700');
+        }
       }
 
       if (tabId === 'dashboard') loadKpis();
@@ -999,8 +1174,13 @@ Transport Manager</textarea>
         const data = await res.json();
         isKillSwitch = data.killSwitchActive;
         updateKillSwitchUi();
+        showToast(
+          isKillSwitch ? 'All automated email sequences have been halted.' : 'Outbound dispatch operations restored to active status.',
+          'info',
+          isKillSwitch ? 'Emergency Stop Engaged' : 'Outbound Resumed'
+        );
       } catch (err) {
-        alert('Failed to toggle kill switch: ' + err.message);
+        showToast('Failed to toggle kill switch: ' + err.message, 'error', 'Control Error');
       }
     }
 
@@ -1010,15 +1190,15 @@ Transport Manager</textarea>
       const statusBadge = document.getElementById('systemStatusBadge');
 
       if (isKillSwitch) {
-        btn.className = "px-3.5 py-1.5 rounded-md font-semibold text-xs tracking-wider uppercase bg-rose-600 text-white shadow-sm";
+        btn.className = "btn-press px-3.5 py-1.5 rounded-lg font-bold text-xs tracking-wider uppercase bg-slate-900 hover:bg-slate-800 text-white shadow-sm cursor-pointer";
         text.innerText = "OUTBOUND FROZEN";
-        statusBadge.className = "text-xs px-2 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-700 font-medium flex items-center gap-1.5";
-        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span> ALL OUTBOUND FROZEN';
+        statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full bg-slate-200 border border-slate-300 text-slate-900 font-bold flex items-center gap-1.5 transition-all";
+        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-900 animate-pulse"></span> ALL OUTBOUND FROZEN';
       } else {
-        btn.className = "px-3.5 py-1.5 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5 bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 shadow-sm";
+        btn.className = "btn-press px-3.5 py-1.5 rounded-lg font-semibold text-xs transition-all flex items-center gap-2 bg-white text-slate-900 border border-slate-300 hover:bg-slate-100 shadow-xs cursor-pointer";
         text.innerText = "Emergency Stop";
-        statusBadge.className = "text-xs px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium flex items-center gap-1.5";
-        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active';
+        statusBadge.className = "text-xs px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-900 font-semibold flex items-center gap-1.5 transition-all";
+        statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-700 animate-pulse"></span> Active';
       }
     }
 
@@ -1078,7 +1258,7 @@ Transport Manager</textarea>
 
     async function pushSelectedToCampaign() {
       if (!currentApolloLeads || currentApolloLeads.length === 0) {
-        showApolloAlert('No leads available to queue. Run discovery first.', 'amber');
+        showToast('No leads available to queue. Run discovery first.', 'warning', 'No Leads');
         return;
       }
 
@@ -1088,13 +1268,12 @@ Transport Manager</textarea>
       if (checkedBoxes.length > 0) {
         targetLeads = checkedBoxes.map(chk => currentApolloLeads[parseInt(chk.dataset.idx, 10)]).filter(Boolean);
       } else {
-        // "Select All & Push to Campaign" shortcut: select all leads!
         toggleSelectAllLeads(true);
         targetLeads = [...currentApolloLeads];
       }
 
       if (targetLeads.length === 0) {
-        showApolloAlert('No leads selected to push to campaign.', 'amber');
+        showToast('No leads selected to push to campaign.', 'warning', 'Selection Empty');
         return;
       }
 
@@ -1118,7 +1297,6 @@ Transport Manager</textarea>
           throw new Error(data.message || data.error || 'Failed to queue campaign leads');
         }
 
-        // Update UI status tags for queued leads
         const queuedSet = new Set((data.queued || []).map(q => q.email.toLowerCase()));
         currentApolloLeads.forEach((lead, idx) => {
           if (queuedSet.has((lead.contactEmail || '').toLowerCase())) {
@@ -1126,10 +1304,10 @@ Transport Manager</textarea>
             if (statusCell) {
               statusCell.innerHTML = \`
                 <div class="flex flex-col gap-1 items-start">
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-blue-50 text-blue-700 border border-blue-200 font-bold">
-                    <i class="fa-solid fa-paper-plane text-[9px] mr-1"></i> IN CAMPAIGN
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-900 border border-slate-200 font-bold">
+                    <i class="fa-solid fa-paper-plane text-[9px] mr-1 text-slate-600"></i> IN CAMPAIGN
                   </span>
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600 border border-gray-200">
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 border border-slate-200 font-medium">
                     QUEUED
                   </span>
                 </div>
@@ -1138,9 +1316,9 @@ Transport Manager</textarea>
           }
         });
 
-        showApolloAlert(\`✅ \${data.message}\`, 'emerald');
+        showToast(data.message, 'success', 'Campaign Queued');
       } catch (err) {
-        showApolloAlert(\`❌ Campaign Push Error: \${err.message}\`, 'rose');
+        showToast('Campaign Push Error: ' + err.message, 'error', 'Queue Failed');
       } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -1150,7 +1328,7 @@ Transport Manager</textarea>
 
     function exportApolloResultsCsv() {
       if (!currentApolloLeads || currentApolloLeads.length === 0) {
-        showApolloAlert('No leads available to export. Run discovery first.', 'amber');
+        showToast('No leads available to export. Run discovery first.', 'warning', 'Export Notice');
         return;
       }
 
@@ -1205,23 +1383,11 @@ Transport Manager</textarea>
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showApolloAlert(\`📥 Exported \${exportList.length} lead(s) to CSV (\${a.download})\`, 'emerald');
+      showToast(\`Exported \${exportList.length} lead(s) to CSV (\${a.download})\`, 'success', 'Export Complete');
     }
 
     function showApolloAlert(msg, type) {
-      const box = document.getElementById('apolloActionAlert');
-      const text = document.getElementById('apolloActionAlertText');
-      if (!box || !text) return;
-
-      box.className = \`p-3 rounded-md text-xs font-medium border flex items-center justify-between \${
-        type === 'emerald'
-          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-          : type === 'rose'
-          ? 'bg-rose-50 text-rose-800 border-rose-200'
-          : 'bg-amber-50 text-amber-800 border-amber-200'
-      }\`;
-      text.innerText = msg;
-      box.classList.remove('hidden');
+      showToast(msg, 'info');
     }
 
     function toggleApolloRole(role) {
@@ -1239,9 +1405,8 @@ Transport Manager</textarea>
     async function runApolloDiscovery() {
       const btn = document.getElementById('btnApolloSearch');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Discovering...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-xs"></i> <span>Discovering...</span>';
 
-      // 1. Target Markets / Countries (Select or Type)
       const checkedCountries = Array.from(document.querySelectorAll('input[name="country"]:checked')).map(el => el.value);
       const customMarketsInput = document.getElementById('apolloCustomMarkets') ? document.getElementById('apolloCustomMarkets').value : '';
       const typedCountries = customMarketsInput.split(/[,\\n]+/).map(c => c.trim()).filter(Boolean);
@@ -1250,13 +1415,11 @@ Transport Manager</textarea>
         selectedCountries.push('United Arab Emirates');
       }
 
-      // 2. Industry (Select or Type)
       const checkedIndustries = Array.from(document.querySelectorAll('input[name="industry"]:checked')).map(el => el.value);
       const customIndustriesInput = document.getElementById('apolloCustomIndustries') ? document.getElementById('apolloCustomIndustries').value : '';
       const typedIndustries = customIndustriesInput.split(/[,\\n]+/).map(i => i.trim()).filter(Boolean);
       const selectedIndustries = Array.from(new Set([...checkedIndustries, ...typedIndustries]));
 
-      // 3. Target Roles / Positions (Select or Type)
       const titles = document.getElementById('apolloTitles').value.split('\\n').map(t => t.trim()).filter(Boolean);
       const minEmployees = parseInt(document.getElementById('apolloMinTeam').value, 10);
       const perPage = parseInt(document.getElementById('apolloPerPage').value, 10);
@@ -1287,39 +1450,40 @@ Transport Manager</textarea>
         currentApolloLeads = data.report.leads || [];
 
         statsBox.innerHTML = \`
-          <span class="text-emerald-700 font-semibold">\${data.report.eligibleForOutreachCount} Eligible</span> &bull;
-          <span class="text-rose-700 font-semibold">\${data.report.blockedByComplianceCount} Blocked</span> &bull;
-          <span class="text-gray-500">Total: \${data.report.totalDiscovered}</span>
+          <span class="text-slate-900 font-semibold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">\${data.report.eligibleForOutreachCount} Eligible</span>
+          <span class="text-slate-900 font-semibold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">\${data.report.blockedByComplianceCount} Blocked</span>
+          <span class="text-slate-500 font-medium">Total: \${data.report.totalDiscovered}</span>
         \`;
 
         if (!data.report.leads || data.report.leads.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-gray-400">No leads discovered matching the selected criteria.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-slate-400">No leads discovered matching the selected criteria.</td></tr>';
           return;
         }
 
         data.report.leads.forEach((l, idx) => {
           const tr = document.createElement('tr');
           tr.id = \`apollo-lead-row-\${idx}\`;
+          tr.className = "hover:bg-slate-50/80 transition-colors";
           const complianceBadge = l.complianceAllowed
-            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">ALLOWED</span>'
-            : \`<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-rose-50 text-rose-700 border border-rose-200 font-semibold">\${l.complianceReason || 'BLOCKED'}</span>\`;
+            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-900 border border-slate-200 font-semibold">ALLOWED</span>'
+            : \`<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-900 border border-slate-200 font-semibold">\${l.complianceReason || 'BLOCKED'}</span>\`;
 
           const qualificationBadge = l.qualificationOutcome === 'WARM_QUALIFIED_HAND_TO_HUMAN'
-            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-blue-50 text-blue-700 border border-blue-200 font-semibold">WARM QUALIFIED</span>'
-            : \`<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600 border border-gray-200">\${l.qualificationOutcome || 'PROSPECT'}</span>\`;
+            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-900 border border-slate-200 font-bold">WARM QUALIFIED</span>'
+            : \`<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 border border-slate-200">\${l.qualificationOutcome || 'PROSPECT'}</span>\`;
 
           tr.innerHTML = \`
             <td class="p-3 text-center">
-              <input type="checkbox" class="apollo-lead-check rounded border-gray-300 text-slate-900 focus:ring-0" data-idx="\${idx}" onchange="updateSelectedCount()">
+              <input type="checkbox" class="apollo-lead-check rounded border-slate-300 text-slate-900 focus:ring-0" data-idx="\${idx}" onchange="updateSelectedCount()">
             </td>
-            <td class="p-3 font-semibold text-gray-900">\${l.companyName || '—'}</td>
-            <td class="p-3 text-gray-800 font-medium">\${l.jobTitle || '—'}</td>
-            <td class="p-3 text-gray-900 font-medium">\${l.contactName || '—'}</td>
-            <td class="p-3 font-mono text-gray-700 text-xs">\${l.contactEmail || '—'}</td>
-            <td class="p-3 font-mono text-gray-600">\${l.contactPhone || '—'}</td>
-            <td class="p-3 font-mono text-gray-600">\${l.companyPhone || '—'}</td>
-            <td class="p-3 font-mono font-semibold text-gray-700">\${l.country || '—'}</td>
-            <td class="p-3 text-gray-600">\${l.industry || '—'}</td>
+            <td class="p-3 font-semibold text-slate-900">\${l.companyName || '—'}</td>
+            <td class="p-3 text-slate-800 font-medium">\${l.jobTitle || '—'}</td>
+            <td class="p-3 text-slate-900 font-medium">\${l.contactName || '—'}</td>
+            <td class="p-3 font-mono text-slate-700 text-xs">\${l.contactEmail || '—'}</td>
+            <td class="p-3 font-mono text-slate-600">\${l.contactPhone || '—'}</td>
+            <td class="p-3 font-mono text-slate-600">\${l.companyPhone || '—'}</td>
+            <td class="p-3 font-mono font-semibold text-slate-800">\${l.country || '—'}</td>
+            <td class="p-3 text-slate-700">\${l.industry || '—'}</td>
             <td class="p-3" id="apollo-lead-status-\${idx}">
               <div class="flex flex-col gap-1 items-start">
                 \${complianceBadge}
@@ -1330,16 +1494,16 @@ Transport Manager</textarea>
           tbody.appendChild(tr);
         });
 
-        // Reset select all checkbox & count
         const master = document.getElementById('selectAllCheckbox');
         if (master) master.checked = false;
         updateSelectedCount();
 
+        showToast(\`Discovered \${data.report.totalDiscovered} leads (\${data.report.eligibleForOutreachCount} eligible)\`, 'success', 'Apollo Query Complete');
       } catch (err) {
-        alert('Discovery error: ' + err.message);
+        showToast('Discovery error: ' + err.message, 'error', 'Query Failed');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass text-xs"></i> Discover &amp; Pipeline from Apollo';
+        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass text-xs"></i> <span>Discover &amp; Pipeline from Apollo</span>';
       }
     }
 
@@ -1349,18 +1513,19 @@ Transport Manager</textarea>
 Zayd,Mansoor,Fleet Operations Manager,Gulf Logistics LLC,zayd@gulflogistics.ae,verified,55,United Arab Emirates,gulflogistics.ae
 David,Mwangi,Head of Logistics,Kenya Cargo Services,david@kenyacargo.co.ke,verified,40,Kenya,kenyacargo.co.ke
 Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,80,Germany,munichfleet.de\`;
+      showToast('Sample Apollo CSV loaded into input area.', 'info', 'Template Loaded');
     }
 
     async function submitCsvImport() {
       const csvContent = document.getElementById('csvTextInput').value.trim();
       if (!csvContent) {
-        alert('Please paste CSV content first.');
+        showToast('Please paste CSV content first.', 'warning', 'Empty Input');
         return;
       }
 
       const btn = document.getElementById('btnSubmitCsv');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Importing...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-xs"></i> <span>Importing...</span>';
 
       try {
         const res = await fetch('/leads/import/apollo-csv', {
@@ -1372,15 +1537,21 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
         const box = document.getElementById('csvResultBox');
         box.classList.remove('hidden');
         box.innerHTML = \`
-          <h4 class="font-bold text-gray-900 text-xs mb-1">CSV Processed Successfully</h4>
-          <p class="text-gray-600">Total Rows: <b>\${data.result.totalRows}</b> | Contacts Ingested: <b>\${data.result.importedContacts}</b> | Companies: <b>\${data.result.importedCompanies}</b></p>
-          <p class="mt-1"><span class="text-emerald-700 font-semibold">\${data.result.eligibleCount} Eligible for Outreach</span> | <span class="text-rose-700 font-semibold">\${data.result.blockedCount} Blocked by Compliance</span></p>
+          <h4 class="font-bold text-slate-900 text-xs mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check text-slate-700"></i> CSV Processed Successfully
+          </h4>
+          <p class="text-slate-700">Total Rows: <b>\${data.result.totalRows}</b> &bull; Contacts Ingested: <b>\${data.result.importedContacts}</b> &bull; Companies: <b>\${data.result.importedCompanies}</b></p>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded font-semibold">\${data.result.eligibleCount} Eligible for Outreach</span>
+            <span class="text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded font-semibold">\${data.result.blockedCount} Blocked by Compliance</span>
+          </div>
         \`;
+        showToast(\`Imported \${data.result.importedContacts} contacts successfully.\`, 'success', 'Import Complete');
       } catch (err) {
-        alert('CSV Import error: ' + err.message);
+        showToast('CSV Import error: ' + err.message, 'error', 'Import Failed');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-xs"></i> Import & Process CSV';
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-xs"></i> <span>Import &amp; Process CSV</span>';
       }
     }
 
@@ -1391,7 +1562,7 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
     async function runSimulation() {
       const btn = document.getElementById('btnRunSim');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Processing...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-xs"></i> <span>Processing...</span>';
 
       const payload = {
         companyName: document.getElementById('simCompany').value,
@@ -1414,17 +1585,14 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
         document.getElementById('simResultsContent').classList.remove('hidden');
 
         const badge = document.getElementById('simBadge');
+        badge.className = "text-xs px-2.5 py-0.5 rounded-full font-bold uppercase bg-slate-100 text-slate-900 border border-slate-200";
         if (data.replyClassification.replyType === 4) {
-          badge.className = "text-xs px-2.5 py-0.5 rounded font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200";
           badge.innerText = "Type 4: Demo Handover";
         } else if (data.replyClassification.replyType === 5) {
-          badge.className = "text-xs px-2.5 py-0.5 rounded font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200";
           badge.innerText = "Type 5: Pricing Escalation";
         } else if (data.replyClassification.replyType === 1) {
-          badge.className = "text-xs px-2.5 py-0.5 rounded font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200";
           badge.innerText = "Type 1: Auto-Suppressed";
         } else {
-          badge.className = "text-xs px-2.5 py-0.5 rounded font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200";
           badge.innerText = \`Type \${data.replyClassification.replyType}: \${data.replyClassification.intentName}\`;
         }
 
@@ -1436,20 +1604,21 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
         const keywordsBox = document.getElementById('simKeywords');
         if (data.replyClassification.guardrailKeywordHit) {
           keywordsBox.innerText = \`Triggered: [\${data.replyClassification.matchedKeywords.join(', ')}]\`;
-          keywordsBox.className = "font-mono text-rose-700 font-semibold";
+          keywordsBox.className = "font-mono text-slate-900 font-semibold";
         } else {
           keywordsBox.innerText = 'No keyword trigger hit &bull; Model Intent Classification';
-          keywordsBox.className = "font-mono text-gray-600 font-medium";
+          keywordsBox.className = "font-mono text-slate-600 font-medium";
         }
 
         document.getElementById('simHoldingReply').innerText = data.replyClassification.draftHoldingReply || '(No holding reply permitted for this category)';
         document.getElementById('simHandoverPackPreview').innerText = data.handoverDescription || '(No Handover Pack generated; contact auto-suppressed)';
 
+        showToast(\`Classified as: \${data.replyClassification.intentName}\`, 'success', 'Decision Computed');
       } catch (err) {
-        alert('Simulation error: ' + err.message);
+        showToast('Simulation error: ' + err.message, 'error', 'Simulation Failed');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-play text-xs"></i> Execute Reply & Classification Test';
+        btn.innerHTML = '<i class="fa-solid fa-play text-xs"></i> <span>Execute Reply &amp; Classification Test</span>';
       }
     }
 
@@ -1460,19 +1629,20 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
           const data = await res.json();
           const tbody = document.getElementById('handoversTbody');
           if (!data.leads || data.leads.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400">No leads handed over yet in this session.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400">No leads handed over yet in this session.</td></tr>';
             return;
           }
           tbody.innerHTML = '';
           data.leads.forEach(l => {
             const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50/80 transition-colors";
             tr.innerHTML = \`
-              <td class="p-3 font-mono font-bold text-gray-900">#\${l.id}</td>
-              <td class="p-3 font-semibold text-gray-900">\${l.partner_name}</td>
-              <td class="p-3 text-gray-600">\${l.contact_name} (\${l.email_from})</td>
-              <td class="p-3"><span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold border border-rose-200">High Priority</span></td>
-              <td class="p-3 text-emerald-700 font-semibold">Synced to Odoo</td>
-              <td class="p-3 text-gray-500">\${new Date(l.updatedAt).toLocaleTimeString()}</td>
+              <td class="p-3 font-mono font-bold text-slate-900">#\${l.id}</td>
+              <td class="p-3 font-semibold text-slate-900">\${l.partner_name}</td>
+              <td class="p-3 text-slate-700">\${l.contact_name} (\${l.email_from})</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-900 font-bold border border-slate-200">High Priority</span></td>
+              <td class="p-3 text-slate-900 font-semibold flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span> Synced to Odoo</td>
+              <td class="p-3 text-slate-500 font-mono text-[11px]">\${new Date(l.updatedAt).toLocaleTimeString()}</td>
             \`;
             tbody.appendChild(tr);
           });
@@ -1533,12 +1703,12 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
       const windowDetail = document.getElementById('workerWindowDetail');
 
       if (stats.windowOpen) {
-        windowBadge.className = 'flex items-center gap-1.5 font-bold text-emerald-700';
-        windowBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span>OPEN (Active)</span>';
+        windowBadge.className = 'flex items-center gap-1.5 font-bold text-slate-900';
+        windowBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-700 animate-pulse"></span> <span>OPEN (Active)</span>';
         windowDetail.innerText = \`\${stats.currentDayInTz} \${stats.currentTimeInTz} (\${settings?.schedule?.timezone || 'Local'})\`;
       } else {
-        windowBadge.className = 'flex items-center gap-1.5 font-bold text-amber-700';
-        windowBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span> <span>CLOSED (Window Inactive)</span>';
+        windowBadge.className = 'flex items-center gap-1.5 font-bold text-slate-900';
+        windowBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-400"></span> <span>CLOSED (Window Inactive)</span>';
         windowDetail.innerText = stats.windowReason || \`\${stats.currentDayInTz} \${stats.currentTimeInTz}\`;
       }
 
@@ -1574,13 +1744,16 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
         updateWorkerStatsUi(data.stats, null);
 
         const reasonNote = data.result.reason ? \` <i>(\${data.result.reason})</i>\` : '';
-        alertBox.className = "p-3 rounded-md text-xs font-medium border flex items-center justify-between bg-emerald-50 text-emerald-800 border-emerald-200";
+        alertBox.className = "p-3.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 text-slate-900 flex items-center justify-between";
         alertText.innerHTML = \`<b>Batch Executed:</b> \${data.result.sentCount} sent, \${data.result.retryingCount} retrying, \${data.result.failedCount} failed, \${data.result.skippedWindowCount} skipped (window).\${reasonNote}\`;
         alertBox.classList.remove('hidden');
+
+        showToast(\`Batch triggered: \${data.result.sentCount} sent.\`, 'success', 'Batch Execution');
       } catch (err) {
-        alertBox.className = "p-3 rounded-md text-xs font-medium border flex items-center justify-between bg-rose-50 text-rose-800 border-rose-200";
+        alertBox.className = "p-3.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 text-slate-900 flex items-center justify-between";
         alertText.innerText = 'Failed to execute batch: ' + err.message;
         alertBox.classList.remove('hidden');
+        showToast('Failed to execute batch: ' + err.message, 'error', 'Dispatch Error');
       } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -1625,15 +1798,17 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
 
         updateWorkerStatsUi(data.stats, data.settings);
 
-        statusEl.className = "text-xs text-emerald-600 font-semibold";
+        statusEl.className = "text-xs text-slate-900 font-semibold";
         statusEl.classList.remove('hidden');
         statusEl.innerText = '✅ ' + (data.message || 'Settings saved and worker reconfigured.');
         setTimeout(() => statusEl.classList.add('hidden'), 4000);
+
+        showToast('Settings saved and worker reconfigured.', 'success', 'Saved');
       } catch (err) {
-        statusEl.className = "text-xs text-rose-600 font-semibold";
+        statusEl.className = "text-xs text-slate-900 font-semibold";
         statusEl.classList.remove('hidden');
         statusEl.innerText = '❌ Failed to save: ' + err.message;
-        statusEl.classList.remove('hidden');
+        showToast('Failed to save settings: ' + err.message, 'error', 'Save Error');
       }
     }
 
@@ -1657,7 +1832,7 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
       const messageBody = document.getElementById('wa-sim-body').value;
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>Processing...</span>';
 
       try {
         const res = await fetch('/internal/whatsapp/simulate', {
@@ -1674,11 +1849,13 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
 
         loadWhatsAppConversations();
         loadKpis();
+
+        showToast(\`WhatsApp message processed: \${data.classification.intentName}\`, 'success', 'WhatsApp AI');
       } catch (err) {
-        alert('Simulation failed: ' + err.message);
+        showToast('WhatsApp simulation failed: ' + err.message, 'error', 'Simulation Error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> <span>Send Inbound to AI</span>';
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane text-xs"></i> <span>Send Inbound to AI</span>';
       }
     }
 
@@ -1688,37 +1865,37 @@ Stefan,Bauer,Dispatch Director,Munich Fleet Gmbh,stefan@munichfleet.de,verified,
         const data = await res.json();
         const tbody = document.getElementById('wa-conversations-tbody');
         if (!data.conversations || data.conversations.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-gray-400 italic">No WhatsApp conversations recorded yet. Use the simulator or send a webhook to test.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-slate-400 italic">No WhatsApp conversations recorded yet. Use the simulator or send a webhook to test.</td></tr>';
           return;
         }
 
         tbody.innerHTML = '';
         data.conversations.forEach(c => {
           const tr = document.createElement('tr');
-          tr.className = "hover:bg-gray-50/80";
+          tr.className = "hover:bg-slate-50/80 transition-colors";
           tr.innerHTML = \`
-            <td class="py-2.5 font-semibold text-gray-900">
+            <td class="py-3 font-semibold text-slate-900">
               <div>\${c.partnerName}</div>
-              <div class="text-[11px] text-gray-500 font-normal">\${c.phone}</div>
+              <div class="text-[11px] text-slate-500 font-normal font-mono">\${c.phone}</div>
             </td>
-            <td class="py-2.5 max-w-xs truncate text-gray-700">
+            <td class="py-3 max-w-xs truncate text-slate-800">
               "\${c.messageBody}"
             </td>
-            <td class="py-2.5">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold \${c.classification.guardrailKeywordHit ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
+            <td class="py-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-900 border border-slate-200">
                 \${c.classification.intentName}
               </span>
             </td>
-            <td class="py-2.5 text-[11px] text-emerald-800 italic max-w-xs truncate">
-              \${c.replySent ? c.replySent : '<span class="text-gray-400 font-normal">None (Escalated/Suppressed)</span>'}
+            <td class="py-3 text-[11px] text-slate-800 italic max-w-xs truncate">
+              \${c.replySent ? c.replySent : '<span class="text-slate-400 font-normal">None (Escalated/Suppressed)</span>'}
             </td>
-            <td class="py-2.5">
-              <span class="px-2 py-0.5 rounded text-[10px] font-semibold \${c.withinMetaWindow ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+            <td class="py-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-900 border border-slate-200">
                 \${c.withinMetaWindow ? 'Open (<24h)' : 'Expired'}
               </span>
             </td>
-            <td class="py-2.5 font-semibold">
-              \${c.odooLeadId ? ('<span class="text-emerald-700">Lead #' + c.odooLeadId + '</span>') : '<span class="text-gray-400 text-[11px] font-normal">None</span>'}
+            <td class="py-3 font-semibold">
+              \${c.odooLeadId ? ('<span class="text-slate-900 font-bold">Lead #' + c.odooLeadId + '</span>') : '<span class="text-slate-400 text-[11px] font-normal">None</span>'}
             </td>
           \`;
           tbody.appendChild(tr);
